@@ -1,0 +1,25 @@
+## @file
+#  Board device-tree fix-ups for the A733 platforms.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION    = 0x00010005
+  BASE_NAME      = A733BoardFdtLib
+  FILE_GUID      = 4C0D9F2A-6B71-4E38-9A45-2F8C1D7B3E60
+  MODULE_TYPE    = BASE
+  VERSION_STRING = 1.0
+  LIBRARY_CLASS  = A733BoardFdtLib
+
+[Sources]
+  A733BoardFdtLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  DebugLib
+  FdtLib

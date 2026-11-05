@@ -1,0 +1,31 @@
+## @file
+#  Network stack "enabled" gating library: links into the drivers that
+#  must only start when the network stack is enabled from Setup
+#  (NetworkStackConfigDxe installs gNetworkStackEnabledProtocolGuid).
+#  The library provides no code: its CONSTRUCTOR is a no-op and its Depex
+#  is the interesting part - it is AND-ed into the consumer's own depex,
+#  so with the protocol uninstalled the consumer never dispatches.
+#
+#  Ported from edk2-rockchip (Copyright (c) 2025 Mario Balanica),
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x0001001B
+  BASE_NAME                      = NetworkStackEnabledLib
+  FILE_GUID                      = 4A7330D3-44E4-42A7-3341-7333546B31B4
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = NetworkStackEnabledLib|DXE_DRIVER
+  CONSTRUCTOR                    = NetworkStackEnabledLibInitialize
+
+[Sources]
+  NetworkStackEnabledLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[Depex]
+  gNetworkStackEnabledProtocolGuid

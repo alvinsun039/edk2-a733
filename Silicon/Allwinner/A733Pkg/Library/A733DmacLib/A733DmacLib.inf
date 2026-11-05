@@ -1,0 +1,33 @@
+## @file
+#  A733 system DMA controller (DMAC) library.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+[Defines]
+  INF_VERSION    = 0x00010005
+  BASE_NAME      = A733DmacLib
+  FILE_GUID      = 6f0e1c2a-7b3d-4c8e-9a51-a7330000000b
+  MODULE_TYPE    = BASE
+  VERSION_STRING = 1.0
+  LIBRARY_CLASS  = A733DmacLib
+
+[Sources]
+  A733DmacLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  CacheMaintenanceLib
+  DebugLib
+  IoLib
+  PcdLib
+  ## The DMAC's bus clock gate and reset live in the CCU (DMA0_BGR_REG).
+  A733CcuLib
+
+[Pcd]
+  gA733TokenSpaceGuid.PcdA733CcuBase

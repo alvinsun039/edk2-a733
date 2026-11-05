@@ -1,0 +1,75 @@
+## @file
+#  USB3.1 GEN2 DRD (DWC3) host bring-up for the Allwinner A733 (sun60iw2p1).
+#
+#  Opens the DRD's clocks and resets, powers its USB2.0 port's PHY, resets the
+#  DWC3 core and puts it in host mode, then publishes the controller as a
+#  non-discoverable PCI device so that MdeModulePkg's XhciDxe - and, above it,
+#  UsbBusDxe/UsbKbDxe/UsbMassStorageDxe - can drive the port the board's USB2
+#  hub and its three Type-A ports hang off.  The driver contains no USB: it is
+#  the SoC-side glue only.
+#
+#  It touches MMIO it owns and nothing else, so its entry point needs no
+#  protocol beyond the boot services table, and it must run before BDS connects
+#  controllers: the FV lists it before BdsDxe for that reason.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION    = 0x00010005
+  BASE_NAME      = A733Xhci2Dxe
+  FILE_GUID      = 6f0e1c2a-7b3d-4c8e-9a51-a73300000022
+  MODULE_TYPE    = UEFI_DRIVER
+  VERSION_STRING = 1.0
+  ENTRY_POINT    = A733Xhci2DxeEntryPoint
+
+[Sources]
+  A733Xhci2Dxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  Platform/Radxa/CubieA7APkg/CubieA7A.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  BaseMemoryLib
+  ## The pin controller, for the 5 V switch in front of the Type-A ports.
+  A733GpioLib
+  ## The PMIC, for the hub's own 3.3 V rail (DCDC1) - the hub has no enable
+  ## pin of its own, so that rail is the whole of its power control.
+  A733PmicLib
+  BaseLib
+  DebugLib
+  IoLib
+  ## The registration library that installs the non-discoverable device
+  ## protocol, which is what gives the controller a PCI I/O instance.
+  NonDiscoverableDeviceRegistrationLib
+  PcdLib
+  TimerLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+
+[Pcd]
+  gA733TokenSpaceGuid.PcdA733CcuBase
+
+  ## The R_PIO block, read back after the 5 V switch is driven.
+  gA733TokenSpaceGuid.PcdA733RpioBase
+
+  ## The board's Type-A port 5 V switch, in the R_PIO domain: EN of U5 on the
+  ## schematic's page 14 (net USB_HOST_EN, output VCC5V0_USB20), i.e. the 5 V of
+  ## the ports behind the hub - not the hub's supply, which is PMIC DCDC1.
+  gCubieA7APkgTokenSpaceGuid.PcdA733UsbHubVbusPin
+
+[Protocols]
+  ## Consumed via DEPEX only: the OTG port's MUSB device driver publishes this
+  ## after its platform phase (USB0's PHY0 dance) has run, and this driver's
+  ## whole USB2-femto bring-up must land after that phase, the way the working
+  ## reference's single driver ordered it - PHY0 first, then the U2P0 block,
+  ## the combo PHY and the DWC3 core.
+  gUsbDeviceProtocolGuid
+
+[Depex]
+  gUsbDeviceProtocolGuid

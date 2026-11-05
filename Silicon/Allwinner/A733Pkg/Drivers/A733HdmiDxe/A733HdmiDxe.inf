@@ -1,0 +1,76 @@
+## @file
+#  A733HdmiDxe - bring the Allwinner A733 (sun60iw2) HDMI output up from
+#  cold inside EDK2 and publish it as an EFI_GRAPHICS_OUTPUT_PROTOCOL.
+#
+#  Pipeline driven here: CCU clocks -> DE3.0 channel -> TCON3 (tcon-tv)
+#  -> DWC-HDMI + SNPS PHY (pixel clock from the top-PHY PLL).  The mode is
+#  the one the Display Mode variable selects (default VIC 16 = 1080p60);
+#  EDID is read once the core is clocked and published as a config table.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  Portions derived from edk2-a733 (github.com/vehoelite/edk2-a733),
+#  Copyright (c) 2026 carpi-os contributors, BSD-2-Clause-Patent.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION    = 0x00010005
+  BASE_NAME      = A733HdmiDxe
+  FILE_GUID      = 2E9C4D1B-7F63-4A8E-B2D4-6C5A1F9E3B70
+  MODULE_TYPE    = DXE_DRIVER
+  VERSION_STRING = 1.0
+  ENTRY_POINT    = A733HdmiDxeEntryPoint
+
+[Sources]
+  A733HdmiDxe.c
+  A733HdmiDxe.h
+  A733HdmiMode.c
+  A733HdmiEdid.c
+  A733DisplayClock.c
+  A733DeHw.c
+  A733TconHw.c
+  A733HdmiHw.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  ArmPkg/ArmPkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  CacheMaintenanceLib
+  DebugLib
+  IoLib
+  MemoryAllocationLib
+  PerformanceLib
+  PcdLib
+  TimerLib
+  UefiBootServicesTableLib
+  UefiLib
+  UefiRuntimeServicesTableLib
+  UefiDriverEntryPoint
+  A733CcuLib
+  A733DisplayClockLib
+  A733HdmiModeLib
+  A733PowerLib
+
+[Guids]
+  gA733SetupFormSetGuid
+  gA733EdidInfoGuid
+
+[Pcd]
+  ## DynamicHII PCDs bound to the A733SetupDxe "DisplayMode" variable
+  ## (platform DSC).  Without a writer the defaults in the DSC keep the
+  ## driver on the anchor mode.
+  gA733TokenSpaceGuid.PcdDisplayModePreset
+  gA733TokenSpaceGuid.PcdDisplayModeCustom
+
+[Protocols]
+  gEfiGraphicsOutputProtocolGuid                ## PRODUCES
+  gEfiDevicePathProtocolGuid                   ## PRODUCES
+  gEfiVariableWriteArchProtocolGuid             ## CONSUMES
+
+[Depex]
+  TRUE

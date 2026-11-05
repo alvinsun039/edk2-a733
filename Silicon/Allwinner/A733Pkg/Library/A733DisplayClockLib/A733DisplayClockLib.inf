@@ -1,0 +1,31 @@
+## @file
+#  Display clock / reset sequences for the A733 HDMI pipeline: the keyed
+#  AHB/MBUS master gates, DE0 (PLL_DE + CLK_DE0 + bus reset), the vo1 /
+#  dpss_top1 / tcon-tv crossing and the HDMI TV output divider.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  Portions derived from edk2-a733 (github.com/vehoelite/edk2-a733),
+#  Copyright (c) 2026 carpi-os contributors, BSD-2-Clause-Patent.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION    = 0x0001001C
+  BASE_NAME      = A733DisplayClockLib
+  FILE_GUID      = 5B7C1A44-6D2E-4F19-9C3B-8E4A0F1D2C77
+  MODULE_TYPE    = BASE
+  VERSION_STRING = 0.1
+  LIBRARY_CLASS  = A733DisplayClockLib
+
+[Sources]
+  A733DisplayClockLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  A733CcuLib
+  DebugLib
+  IoLib
+  TimerLib

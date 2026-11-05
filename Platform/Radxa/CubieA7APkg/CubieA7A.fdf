@@ -1,0 +1,227 @@
+## @file
+#  Radxa Cubie A7A flash device layout (minimal build).
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+!include Platform/Radxa/CubieA7APkg/CubieA7A.fdf.inc
+
+[FD.CUBIEA7A_EFI]
+  BaseAddress   = 0x41001000
+  Size          = 0x00180000
+  ErasePolarity = 1
+  BlockSize     = 0x00001000
+  NumBlocks     = 0x0180
+
+  # AArch64 trampoline: adr x1, .  then a branch to the FV that sits at
+  # FD+0x1000.  GenFds writes the FV ZeroVector as a branch to the first
+  # image in the volume (PrePi, RuleOverride=SELF_RELOC), so the entry
+  # needs no post-build patching.
+  0x00000000|0x00001000
+  DATA = {
+    0x01, 0x00, 0x00, 0x10,
+    0xff, 0x03, 0x00, 0x14
+  }
+
+  0x00001000|0x0017F000
+  FV = FVMAIN_COMPACT
+
+#
+# PrePi runs straight out of the uncompressed volume; everything else is
+# packed into FVMAIN and reaches DXE through the GUIDed LZMA section that
+# PrePi's DecompressFirstFv() expects to find here.
+#
+[FV.FVMAIN_COMPACT]
+  FvAlignment        = 16
+  ERASE_POLARITY     = 1
+  MEMORY_MAPPED      = TRUE
+  STICKY_WRITE       = TRUE
+  LOCK_CAP           = TRUE
+  LOCK_STATUS        = TRUE
+  WRITE_DISABLED_CAP = TRUE
+  WRITE_ENABLED_CAP  = TRUE
+  WRITE_STATUS       = TRUE
+  WRITE_LOCK_CAP     = TRUE
+  WRITE_LOCK_STATUS  = TRUE
+  READ_DISABLED_CAP  = TRUE
+  READ_ENABLED_CAP   = TRUE
+  READ_STATUS        = TRUE
+  READ_LOCK_CAP      = TRUE
+  READ_LOCK_STATUS   = TRUE
+
+  INF RuleOverride=SELF_RELOC ArmVirtPkg/PrePi/ArmVirtPrePiUniCoreRelocatable.inf
+
+  FILE FV_IMAGE = 9E21FD93-9C72-4c15-8C4B-E77F1DB2D792 {
+    SECTION GUIDED EE4E5898-3914-4259-9D6E-DC7BD79403CF PROCESSING_REQUIRED = TRUE {
+      SECTION FV_IMAGE = FVMAIN
+    }
+  }
+
+[FV.FVMAIN]
+  FvAlignment        = 16
+  ERASE_POLARITY     = 1
+  MEMORY_MAPPED      = TRUE
+  STICKY_WRITE       = TRUE
+  LOCK_CAP           = TRUE
+  LOCK_STATUS        = TRUE
+  WRITE_DISABLED_CAP = TRUE
+  WRITE_ENABLED_CAP  = TRUE
+  WRITE_STATUS        = TRUE
+  WRITE_LOCK_CAP     = TRUE
+  WRITE_LOCK_STATUS  = TRUE
+  READ_DISABLED_CAP  = TRUE
+  READ_ENABLED_CAP   = TRUE
+  READ_STATUS        = TRUE
+  READ_LOCK_CAP      = TRUE
+  READ_LOCK_STATUS   = TRUE
+  #
+  # A fixed name GUID for this volume.  With it, DxeCore publishes the FV with
+  # an Fv(<guid>) device path instead of MemoryMapped(<base>), so a boot option
+  # that points at a file in here stores no RAM address and is byte-identical
+  # on every boot.  Without it the option carries the address PrePi happened to
+  # decompress this volume to, EDK2's exact device-path duplicate check can
+  # never match, and a new Boot#### is written every boot.
+  #
+  FvNameGuid         = 26283977-729F-4A95-90A6-817602AC657D
+
+  INF MdeModulePkg/Core/Dxe/DxeMain.inf
+  INF MdeModulePkg/Universal/PCD/Dxe/Pcd.inf
+
+  # Architectural protocols (DxeCore waits for the whole set).
+  INF MdeModulePkg/Universal/SecurityStubDxe/SecurityStubDxe.inf
+  INF MdeModulePkg/Universal/Metronome/Metronome.inf
+  INF MdeModulePkg/Universal/CapsuleRuntimeDxe/CapsuleRuntimeDxe.inf
+  INF ArmPkg/Drivers/CpuDxe/CpuDxe.inf
+  INF ArmPkg/Drivers/ArmGicDxe/ArmGicDxe.inf
+  INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
+  INF MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
+  INF MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
+  INF MdeModulePkg/Universal/MonotonicCounterRuntimeDxe/MonotonicCounterRuntimeDxe.inf
+  INF MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
+  INF EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf
+
+  # ACPI: AcpiTableDxe provides the table protocol; the BGRT driver builds
+  # the Boot Graphics Resource Table from the HII logo at ReadyToBoot and
+  # publishes gEdkiiBootLogo2ProtocolGuid (see the DSC note).
+  INF MdeModulePkg/Universal/Acpi/AcpiTableDxe/AcpiTableDxe.inf
+  INF MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.inf
+  INF Silicon/Allwinner/A733Pkg/Drivers/AcpiPlatformDxe/AcpiPlatformDxe.inf
+
+  # The FV ACPI tables AcpiPlatformDxe installs at EndOfDxe, packed as one
+  # FREEFORM FFS under the well-known AcpiTables FILE_GUID.
+  INF RuleOverride = ACPITABLE Silicon/Allwinner/A733Pkg/AcpiTables/AcpiTables.inf
+
+  # Display: brings DE3.0 -> TCON3 -> DWC-HDMI up as soon as the variable
+  # store is available, and publishes the board's only GOP.  Placed before
+  # the variable driver on purpose: its entry point arms the VariableWrite
+  # notification, which then fires during VariableRuntimeDxe's start.
+  INF Silicon/Allwinner/A733Pkg/Drivers/A733HdmiDxe/A733HdmiDxe.inf
+
+  # The variable store's block device, before the two drivers that consume it.
+  INF Silicon/Allwinner/A733Pkg/Drivers/A733FvbDxe/A733FvbDxe.inf
+  INF MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf
+  INF MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteDxe.inf
+
+  INF MdeModulePkg/Universal/SerialDxe/SerialDxe.inf
+  INF MdeModulePkg/Universal/Console/ConPlatformDxe/ConPlatformDxe.inf
+  INF MdeModulePkg/Universal/Console/ConSplitterDxe/ConSplitterDxe.inf
+  # Binds the GOP to ConOut so the Boot Manager and the Shell draw on HDMI.
+  INF MdeModulePkg/Universal/Console/GraphicsConsoleDxe/GraphicsConsoleDxe.inf
+  INF MdeModulePkg/Universal/Console/TerminalDxe/TerminalDxe.inf
+
+  # Boot logo provider (HII image): PlatformBootManagerAfterConsole draws it
+  # through BootLogoLib once the console is up.  Its depex on the HII
+  # protocols orders it after HiiDatabaseDxe below.
+  INF Platform/Radxa/CubieA7APkg/Drivers/CubieA7ALogoDxe/CubieA7ALogoDxe.inf
+
+  # ARISC (E906) startup: PSCI reset/off block until this has run.
+  INF Platform/Radxa/CubieA7APkg/Drivers/AriscStartupDxe/AriscStartupDxe.inf
+
+  INF MdeModulePkg/Universal/DevicePathDxe/DevicePathDxe.inf
+  INF MdeModulePkg/Universal/HiiDatabaseDxe/HiiDatabaseDxe.inf
+  INF MdeModulePkg/Universal/Disk/UnicodeCollation/EnglishDxe/EnglishDxe.inf
+
+  # eMMC and the microSD slot: the host driver, then the stock block/partition/
+  # FAT stack, which is what gives the Shell an fs0: and, with a card in the
+  # slot, an fs1:.
+  INF Silicon/Allwinner/A733Pkg/Drivers/A733SmhcDxe/A733SmhcDxe.inf
+  INF MdeModulePkg/Bus/Sd/EmmcDxe/EmmcDxe.inf
+  INF MdeModulePkg/Bus/Sd/SdDxe/SdDxe.inf
+  INF MdeModulePkg/Universal/Disk/DiskIoDxe/DiskIoDxe.inf
+  INF MdeModulePkg/Universal/Disk/PartitionDxe/PartitionDxe.inf
+  INF FatPkg/EnhancedFatDxe/Fat.inf
+  INF Ext4Pkg/Ext4Dxe/Ext4Dxe.inf
+
+  # USB on the USB2.0 host port: the SoC glue, then the stock stack it feeds -
+  # PCI I/O emulation for the non-discoverable controller, EhciDxe, the bus
+  # driver, and the keyboard and mass-storage class drivers.
+  INF Silicon/Allwinner/A733Pkg/Drivers/A733UsbHostDxe/A733UsbHostDxe.inf
+  INF MdeModulePkg/Bus/Pci/NonDiscoverablePciDeviceDxe/NonDiscoverablePciDeviceDxe.inf
+  INF MdeModulePkg/Bus/Pci/EhciDxe/EhciDxe.inf
+  INF Silicon/Allwinner/A733Pkg/Drivers/SunxiOhciDxe/SunxiOhciDxe.inf
+
+  # The USB3.1 GEN2 DRD (DWC3, xHCI2): its SoC glue, then the stock xHCI driver
+  # on the same bus driver and class drivers.  The board's three USB2 Type-A
+  # ports and its WiFi module are behind one 4-port hub on this controller's
+  # USB2.0 port, so this is the stack that reaches them.
+  INF Silicon/Allwinner/A733Pkg/Drivers/A733Xhci2Dxe/A733Xhci2Dxe.inf
+  INF MdeModulePkg/Bus/Pci/XhciDxe/XhciDxe.inf
+
+  INF MdeModulePkg/Bus/Usb/UsbBusDxe/UsbBusDxe.inf
+  INF MdeModulePkg/Bus/Usb/UsbKbDxe/UsbKbDxe.inf
+  INF MdeModulePkg/Bus/Usb/UsbMassStorageDxe/UsbMassStorageDxe.inf
+
+  # Android fastboot over the OTG port: the MUSB device driver first (the
+  # transport locates its protocol once, at its own entry point), then the
+  # stock EmbeddedPkg transport and command engine, then this board's platform
+  # layer.  PlatformBootManagerLib names the application as a boot option, which
+  # is how BDS starts it - an application in this volume has no device path of
+  # its own.
+  INF Silicon/Allwinner/A733Pkg/Drivers/A733MusbDeviceDxe/A733MusbDeviceDxe.inf
+  INF EmbeddedPkg/Drivers/AndroidFastbootTransportUsbDxe/FastbootTransportUsbDxe.inf
+  INF Silicon/Allwinner/A733Pkg/Drivers/A733FastbootPlatformDxe/A733FastbootPlatformDxe.inf
+  INF EmbeddedPkg/Application/AndroidFastboot/AndroidFastbootApp.inf
+
+  # OS hand-off: an Android GKI image set from GPT partitions, and an
+  # EFI-stub Linux kernel + initrd from a FAT volume.  Both boot options.
+  INF Silicon/Allwinner/A733Pkg/Drivers/BootAndroid/BootAndroid.inf
+  INF Silicon/Allwinner/A733Pkg/Drivers/BootDebian/BootDebian.inf
+  INF Silicon/Allwinner/A733Pkg/Drivers/BootExtlinux/BootExtlinux.inf
+
+  # Ethernet (GMAC0) and the stock UEFI network stack over it (DHCP/PXE).
+  INF NetworkPkg/DpcDxe/DpcDxe.inf
+  INF Silicon/Allwinner/A733Pkg/Drivers/SunxiRngDxe/SunxiRngDxe.inf
+  INF Silicon/Allwinner/A733Pkg/Drivers/SunxiGmacDxe/SunxiGmacDxe.inf
+  INF Silicon/Allwinner/A733Pkg/Drivers/DwEmacSnpDxe/DwEmacSnpDxe.inf
+  INF Silicon/Allwinner/A733Pkg/Drivers/SunxiPcieDxe/SunxiPcieDxe.inf
+  INF MdeModulePkg/Bus/Pci/NvmExpressDxe/NvmExpressDxe.inf
+  INF MdeModulePkg/Universal/SmbiosDxe/SmbiosDxe.inf
+  INF Silicon/Allwinner/A733Pkg/Drivers/SunxiSmbiosDxe/SunxiSmbiosDxe.inf
+  INF Silicon/Allwinner/A733Pkg/Drivers/NetworkStackConfigDxe/NetworkStackConfigDxe.inf
+  INF NetworkPkg/SnpDxe/SnpDxe.inf
+  INF NetworkPkg/MnpDxe/MnpDxe.inf
+  INF NetworkPkg/ArpDxe/ArpDxe.inf
+  INF NetworkPkg/Dhcp4Dxe/Dhcp4Dxe.inf
+  INF NetworkPkg/Ip4Dxe/Ip4Dxe.inf
+  INF NetworkPkg/Udp4Dxe/Udp4Dxe.inf
+  INF NetworkPkg/TcpDxe/TcpDxe.inf
+  INF NetworkPkg/Mtftp4Dxe/Mtftp4Dxe.inf
+  INF NetworkPkg/UefiPxeBcDxe/UefiPxeBcDxe.inf
+
+  # The form stack UiApp's front page needs; see the DSC for why the Boot
+  # Manager Menu aborts without them.
+  INF MdeModulePkg/Universal/SetupBrowserDxe/SetupBrowserDxe.inf
+  INF MdeModulePkg/Universal/DisplayEngineDxe/DisplayEngineDxe.inf
+  INF MdeModulePkg/Application/UiApp/UiApp.inf
+  INF MdeModulePkg/Universal/BdsDxe/BdsDxe.inf
+  INF ShellPkg/Application/Shell/Shell.inf
+
+  #
+  # Embedded board DTB, published as the FDT configuration table by
+  # PlatformBootManagerLib - the device tree an EFI-stub kernel boots with.
+  # Compiled from the board's vendor DTS, via edk2-a733 (see NOTICE).
+  #
+  FILE FREEFORM = 4A7330D7-C0DE-42A7-8330-D1B7A7A70001 {
+    SECTION RAW = Platform/Radxa/CubieA7APkg/sun60i-a733-cubie-a7a.dtb
+  }

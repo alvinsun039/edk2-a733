@@ -1,0 +1,64 @@
+## @file
+#  SunxiOhciDxe - OHCI USB host controller driver for Allwinner A733
+#  (sun60iw2) OHCI0 @ 0x04101400 and OHCI1 @ 0x04200400.
+#
+#  Ports the rk3588 OhciDxe core logic onto the EDK2 NonDiscoverableDevice +
+#  PciIo infrastructure. Like EhciDxe it binds gEfiPciIoProtocolGuid (provided
+#  by SunxiNonDiscoverablePciDeviceDxe) and produces gEfiUsb2HcProtocolGuid.
+#  The legacy EFI_USB_HC_PROTOCOL has been removed from this EDK2 tree, so the
+#  driver implements EFI_USB2_HC_PROTOCOL directly, following the UhciDxe
+#  Uhci2* wrapper pattern over the Ohci* core routines.
+#
+#  Copyright (c) 2013-2016 Intel Corporation.
+#  Copyright (c) 2026, carpi-os contributors.
+#  Portions derived from edk2-a733 (github.com/vehoelite/edk2-a733),
+#  Copyright (c) 2026 carpi-os contributors, BSD-2-Clause-Patent.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION    = 0x00010005
+  BASE_NAME      = SunxiOhciDxe
+  FILE_GUID      = 5F8A3D41-B7E2-4C69-9A0D-3E5B7C1F2A64
+  MODULE_TYPE    = UEFI_DRIVER
+  VERSION_STRING = 1.0
+  ENTRY_POINT    = SunxiOhciDriverEntryPoint
+
+[Sources]
+  Ohci2.c
+  Ohci.c
+  OhciReg.c
+  OhciSched.c
+  OhciUrb.c
+  UsbHcMem.c
+  ComponentName.c
+  Ohci.h
+  OhciReg.h
+  OhciSched.h
+  OhciUrb.h
+  Descriptor.h
+  UsbHcMem.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  UefiLib
+  BaseLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  DebugLib
+  IoLib
+  TimerLib
+
+[Guids]
+  gEfiEventExitBootServicesGuid                 ## SOMETIMES_CONSUMES ## Event
+
+[Protocols]
+  gEfiPciIoProtocolGuid                         ## TO_START
+  gEfiUsb2HcProtocolGuid                        ## BY_START
+
+[Depex]
+  TRUE

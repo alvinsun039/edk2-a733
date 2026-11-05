@@ -1,0 +1,32 @@
+/** @file
+ *
+ *  PCI Express Memory-mapped Configuration Space base address description
+ *  table (MCFG) — Allwinner A733
+ *
+ *  v1 skeleton: the A733 DesignWare root port has no ECAM window, so
+ *  there is no memory-mapped configuration space to describe.  Keep the
+ *  header with zero ConfigSpace entries (44-byte table); add entries
+ *  when ECAM support lands.
+ *
+ *  Portions derived from edk2-a733 (github.com/vehoelite/edk2-a733),
+ *  Copyright (c) 2026 carpi-os contributors, BSD-2-Clause-Patent.
+ *  SPDX-License-Identifier: BSD-2-Clause-Patent
+ *
+ **/
+
+#include <IndustryStandard/Acpi.h>
+#include <IndustryStandard/MemoryMappedConfigurationSpaceAccessTable.h>
+
+#include "AcpiTables.h"
+
+A733_MCFG_TABLE  Mcfg = {
+  {
+    ACPI_HEADER (
+      EFI_ACPI_6_4_PCI_EXPRESS_MEMORY_MAPPED_CONFIGURATION_SPACE_BASE_ADDRESS_DESCRIPTION_TABLE_SIGNATURE,
+      A733_MCFG_TABLE,
+      EFI_ACPI_MEMORY_MAPPED_CONFIGURATION_SPACE_ACCESS_TABLE_REVISION
+      ),
+  },
+};
+
+VOID *CONST  ReferenceAcpiTable = &Mcfg;

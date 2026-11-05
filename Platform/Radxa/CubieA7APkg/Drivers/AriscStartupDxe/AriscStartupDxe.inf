@@ -1,0 +1,37 @@
+## @file
+#  AriscStartupDxe — starts the A733 ARISC (E906) PM co-processor via the
+#  BL31 SIP FID 0x8000FF10, mirroring the BSP U-Boot's sunxi_arisc_probe().
+#  Required for the PSCI SYSTEM_RESET/SYSTEM_OFF paths (and the BL31
+#  FF15/FF18 SIDs) to reach a live PM co-processor; the stock Radxa EDK2
+#  chain never performed this call.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  Portions derived from edk2-a733 (github.com/vehoelite/edk2-a733),
+#  Copyright (c) 2026 carpi-os contributors, BSD-2-Clause-Patent.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = AriscStartupDxe
+  FILE_GUID                      = E1A73300-5C0F-4E01-9B73-A733A75C0FE1
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = AriscStartupDxeEntry
+
+[Sources]
+  AriscStartupDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  FdtLib
+
+[Depex]
+  TRUE

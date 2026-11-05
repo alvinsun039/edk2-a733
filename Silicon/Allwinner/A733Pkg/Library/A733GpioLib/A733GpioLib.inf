@@ -1,0 +1,33 @@
+## @file
+#  GPIO / pin-multiplexing library for the Allwinner A733 (sun60iw2p1).
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION    = 0x00010005
+  BASE_NAME      = A733GpioLib
+  FILE_GUID      = 6f0e1c2a-7b3d-4c8e-9a51-a73300000005
+  MODULE_TYPE    = BASE
+  VERSION_STRING = 1.0
+  LIBRARY_CLASS  = A733GpioLib
+
+[Sources]
+  A733GpioLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  BaseLib
+  DebugLib
+  IoLib
+  PcdLib
+
+[Pcd]
+  gA733TokenSpaceGuid.PcdA733GpioBase
+  ## The R_PIO (S_GPIO) domain's base: a separate block from the pin controller
+  ## above, whose banks A733RpioSetOutput addresses.
+  gA733TokenSpaceGuid.PcdA733RpioBase

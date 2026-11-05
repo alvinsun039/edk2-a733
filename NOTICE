@@ -1,0 +1,184 @@
+Third-party material and how it was used
+SPDX-License-Identifier: BSD-2-Clause-Patent
+========================================
+
+1. EDK2
+-------
+This repository is a platform/silicon package that builds against an
+unmodified TianoCore EDK2 checkout.  It contains no EDK2 source.  EDK2 is
+licensed BSD-2-Clause-Patent; its terms are compatible with this repository's
+licence and its copyright notices remain in the upstream tree.
+
+2. Sources consulted for facts
+------------------------------
+The following were read for register offsets, bit fields, command codes,
+timing parameters and protocol behaviour.  Values of that kind are facts and
+are not copyrightable expression; none of their source text, comments or code
+structure was copied into this repository, and a similarity check against
+them (long comment and string comparison, identifier comparison) found no
+shared expression beyond stock EDK2 boilerplate.
+
+  - Allwinner A733 user manual (SMHC, CCU, GPIO, PMIC, USB2.0 DRD, USB2.0
+    HOST, DMA and SPI chapters) - vendor documentation.  Only individual
+    register names, offsets, bit definitions and field encodings are used, and
+    those are cited where they appear; no tables, figures or prose are
+    reproduced, and the few places where a manual sentence is summarised are
+    marked as a summary rather than quoted.
+  - Allwinner Tina BSP Linux MMC driver (GPL-2.0) - consulted for the
+    controller's programming sequence and for what the vendor's own firmware
+    achieves on this board.
+  - Allwinner U-Boot 2018 MMC driver (GPL-2.0+) - consulted for the same.
+  - Public Allwinner EDK2 ports and community A733 trees (BSD-2-Clause-Patent)
+    - consulted for platform layout conventions.
+
+  For the USB work the same rule applies to two more reference points: the
+  vendor's USB device stack (its MUSB wrapper, DMA and endpoint code) and the
+  vendor's USB clock/PHY init, both read to establish *which registers and
+  values this silicon needs*; and the USB host firmware that ships for this
+  board, read the same way.  What was taken from them is a value, the address
+  it goes to and the effect it has - each recorded next to the write in
+  A733Usb.h, A733Musb.h, A733Ccu.h or the driver, with what failed without it.
+  No function body, structure or comment was carried over, and no identifier
+  from those trees appears in this package except where it names a register the
+  two implementations happen to share (USBC_REG_o_*, HCI_*_REG) and is quoted
+  for cross-reference.  The MUSB device driver's own structure - the poll, the
+  staging ring, the TPL discipline, the quiet-window trace - is this
+  package's, not theirs.
+
+  No GPL-licensed code, and no code from those community trees, is included:
+  the driver in this repository is an independent implementation.  If a
+  future change does incorporate such code, that file must carry the
+  original copyright notice and the repository's licence must be revisited
+  for it.
+
+2.1 Code ported from another EDK2 tree
+--------------------------------------
+The HDMI display support is not an independent implementation.  It is a
+port of the display stack in github.com/vehoelite/edk2-a733, which is
+BSD-2-Clause-Patent.  That is a separate upstream project by other authors;
+this package is not its author and only ports the units listed below with
+attribution:
+
+  - Drivers/A733HdmiDxe (edk2-a733: Drivers/SunxiHdmiDxe)
+  - Library/A733DisplayClockLib, Library/A733PowerLib,
+    Library/A733HdmiModeLib
+  - Platform/Radxa/CubieA7APkg/Drivers/CubieA7ALogoDxe (bitmap
+    regenerated at 1920x1080 for this board's HDMI panel; Logo.c is
+    Intel's MdeModulePkg LogoDxe via edk2-a733)
+  - Drivers/BootAndroid, Drivers/BootDebian (OS hand-off)
+  - Platform/Radxa/CubieA7APkg/sun60i-a733-cubie-a7a.dtb (the board's
+    device tree, compiled from the vendor DTS)
+  - Platform/Radxa/CubieA7APkg/scp_dts.dtb (the ARISC configuration FDT;
+    its /dram node is the board's sys_config.fex [dram_para] block)
+  - Include/A733Display.h and Include/VarStoreData.h (originally from
+    edk2-rockchip's platform headers, via edk2-a733)
+  - Include/Guid/A733EdidInfo.h, Include/A733SetupFormSetGuid.h
+
+Every one of those files carries the derivation line and the original
+copyright notices next to this package's own:
+
+  Portions derived from edk2-a733 (github.com/vehoelite/edk2-a733),
+  Copyright (c) 2026 carpi-os contributors, BSD-2-Clause-Patent.
+
+The rename from Sunxi* to A733* is editorial; the register sequences,
+timing values and program structure are the ported ones.
+
+2.1.1 PCIe, SMBIOS, OHCI and the ACPI tables
+--------------------------------------------
+Four more units are ports of the same tree, taken with their upstream
+copyright lines intact:
+
+  - Drivers/SunxiPcieDxe -- CDNS/DesignWare PCIe root complex bring-up
+    (SerDes, combo PHY, LTSSM, ATU, NVMe endpoint registration).  The
+    slot GPIOs are adapted to this tree's A733GpioLib/A733Rpio API and
+    the Setup gate is the FixedAtBuild PcdSunxiPcieEnable, because this
+    tree has no A733SetupDxe.  Disabled by default.
+  - Drivers/SunxiSmbiosDxe -- SMBIOS Type 0/1/2/3/4/7/16/17/19/32.
+  - Drivers/SunxiOhciDxe -- OHCI, ported by edk2-a733 from Intel's
+    MdeModulePkg OhciDxe onto the non-discoverable PCI path; the
+    upstream Intel notices are in every file.
+  - Drivers/AcpiPlatformDxe and AcpiTables (FADT/MADT/GTDT/PPTT/SPCR and
+    a skeleton DSDT) plus Include/AcpiHelperMacros.h.  The table sources
+    carry ARM Limited, Microsoft and the edk2-rockchip template notices.
+
+2.2 GMAC and network stack
+--------------------------
+The GMAC0 board bring-up (SunxiGmacDxe), the DesignWare MAC SNP driver
+(DwEmacSnpDxe), the network-stack configuration driver
+(NetworkStackConfigDxe), the minimal EFI_RNG_PROTOCOL provider
+(SunxiRngDxe) and A733ClockLib are ported from
+github.com/vehoelite/edk2-a733 (edk2-allwinner), BSD-2-Clause-Patent,
+Copyright (c) 2026 carpi-os contributors; DwEmacSnpDxe also carries the
+original Copyright (c) 2012-2014 ARM Limited.  SunxiRngDxe exists only
+because DxeNetLib's Depex requires gEfiRngProtocolGuid; it is seeded from
+the arch timer and is not a hardware TRNG.  The GPIO and TWI calls in
+SunxiGmacDxe were adapted to this tree's A733GpioLib and A733TwiLib; the
+register programming and the UEFI interfaces are unchanged.
+
+3. Register-level facts established against another firmware
+-----------------------------------------------------------
+Four values in the SPI-NOR backend are not what the vendor manual alone
+gives: the pads carry SPI0 as pin function 5 (the manual's port table reads as
+3), the controller's CCR, SAMP_DL and FCR need 2 / 0x5000 / 0x00200140 to
+produce a clock at all, and a command is two bursts rather than one
+full-duplex burst.  Each was established by failing on hardware with the
+manual's reading and then cross-checking against a *different firmware running
+on the same board* - a source of facts about this silicon, not of code.  No
+source text, comment or structure was taken from it or from any vendor
+driver; the implementation was written against those facts and the evidence
+for each value is recorded next to it in the driver.
+
+The USB work rests on the same footing, and the list is longer because the
+manual is thinner there:
+
+  - the USB0/USB1 CCU words outside the manual's USB clock chapter (the keyed
+    AHB master gate, CLK_MSI_LITE2, CLK_RES_DCAP_24M, the pll-peri0 output
+    gates) - without them the PHY window at 0x04101800 does not take a write
+    and the PHY is not powered (A733Ccu.h);
+  - the HCI PHY recipe: the passby word 0x00008A01 (bits 15, 11, 9, 8 and 0),
+    of which the ULPI-bypass bit is what joins the PHY's UTMI port to the
+    controller at all, plus the tune and UTMI control words (A733Usb.h);
+  - the wrapper's OTG control (ISCR) pull-up enables at bits 17:16, which the
+    manual marks reserved, and the PHYCTL writes the manual describes only
+    partly (A733Musb.h);
+  - POWER as a single write of HSENAB | SOFTCONN | SUSPENDM with nothing
+    cleared afterwards (A733Musb.h, POWER);
+  - the bulk endpoint FIFO layout: the vendor's EP1 TX at byte 1124 and EP2 RX
+    at byte 100, the latter widened here to eight packets at byte 2048
+    (A733Musb.h);
+  - the controller's interrupt as GIC SPI 156 / INTID 188, which the platform's
+    device tree contradicts (it reuses the A523's SPI 29) and which the closed
+    firmware and the reference driver both agree on (A733MusbDeviceDxe.c);
+  - and the negative result that shapes the bulk path: the MUSB core's own DMA
+    window (0x500/0x504, 0x540 + 0x10n) does not answer on this die, and the
+    SoC's DMAC - the manual's answer, DRQ ports 27..34 for USB0's device
+    endpoints - reads as secure (SEC = 0), so no normal-world transfer can be
+    programmed (A733Musb.h, A733Dmac.h).  A733DmacLib implements that block
+    anyway, from the manual's chapter 13 alone, because the block exists and
+    because the day BL31 opens it the driver is already written.
+
+Each of those was established by watching the manual's reading fail on this
+board and then confirming the working value against firmware that runs on the
+same board.  Both firmware sources are described by name in the comments where
+their values are used; neither contributes code, comments or structure to this
+repository.
+
+4. Not distributed here
+-----------------------
+Vendor binaries (BL31/ARISC images, the FES loader, packaged firmware
+containers) and board images are not part of this repository and are not
+covered by its licence.  See README.md.
+
+5. Trademarks
+-------------
+Radxa, Cubie, Allwinner and ARM are trademarks of their respective owners.
+They are used here only to describe what the code runs on.  This project is
+not affiliated with, or endorsed by, any of them.
+
+The boot logo bitmap
+(Platform/Radxa/CubieA7APkg/Drivers/CubieA7ALogoDxe/Logo.bmp) reproduces
+the Radxa mark as published by Radxa, unchanged in shape and colour, to
+identify the board this firmware is built for.  It is not covered by the
+BSD-2-Clause-Patent licence that applies to the code, and no licence to
+the mark is granted here.  Replace the bitmap if you build this tree for
+hardware that is not Radxa's.

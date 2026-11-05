@@ -1,0 +1,29 @@
+## @file
+#  Network stack PXE gating library: same mechanism as
+#  NetworkStackEnabledLib, keyed on gNetworkStackPxeBootEnabledProtocolGuid.
+#  Links into UefiPxeBcDxe so PXE boot only starts when enabled from
+#  Setup.
+#
+#  Ported from edk2-rockchip (Copyright (c) 2025 Mario Balanica),
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x0001001B
+  BASE_NAME                      = NetworkStackPxeBootEnabledLib
+  FILE_GUID                      = 4A7330D5-5337-4437-4647-2E454E41424C
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = NetworkStackPxeBootEnabledLib|DXE_DRIVER
+  CONSTRUCTOR                    = NetworkStackEnabledLibInitialize
+
+[Sources]
+  NetworkStackEnabledLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[Depex]
+  gNetworkStackPxeBootEnabledProtocolGuid

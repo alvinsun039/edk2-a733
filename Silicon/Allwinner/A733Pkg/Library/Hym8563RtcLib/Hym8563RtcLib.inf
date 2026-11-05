@@ -1,0 +1,35 @@
+## @file
+#  HYM8563 real time clock library for the Cubie A7A.
+#
+#  Backs EFI GetTime/SetTime with the HYM8563TS on S_TWI1 (PL12/PL13,
+#  address 0x51) instead of the virtual clock this tree used to ship.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = Hym8563RtcLib
+  FILE_GUID                      = 6B1F2C74-8A3D-4E59-9C21-7D5A0B3E4F18
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = RealTimeClockLib
+
+[Sources]
+  Hym8563RtcLib.c
+
+[Packages]
+  EmbeddedPkg/EmbeddedPkg.dec
+  MdePkg/MdePkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  A733TwiLib
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  DxeServicesTableLib
+  IoLib
+  PcdLib
+  TimerLib

@@ -1,0 +1,29 @@
+## @file
+#  Shared HDMI preset-mode table for A733HdmiDxe and A733SetupDxe.
+#
+#  The Setup "Display Mode" presets (index == DISPLAY_MODE_* value) live
+#  here so the EDID-filtered list in the Setup UI and the HDMI driver
+#  resolve the same table.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x0001001B
+  BASE_NAME                      = A733HdmiModeLib
+  FILE_GUID                      = 4A7330E1-5EED-4D21-B52A-3C9D18E7A401
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = A733HdmiModeLib
+
+[Sources]
+  A733HdmiModeLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  BaseLib
+  DebugLib

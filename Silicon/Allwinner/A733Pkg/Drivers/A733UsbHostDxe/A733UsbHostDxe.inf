@@ -1,0 +1,68 @@
+## @file
+#  USB 2.0 host port bring-up for the Allwinner A733 (sun60iw2p1).
+#
+#  Brings the USB1 window's PHY and clocks up and publishes its EHCI controller
+#  as a non-discoverable PCI device, so that MdeModulePkg's EhciDxe - and, above
+#  it, UsbBusDxe/UsbKbDxe/UsbMassStorageDxe - can drive the port.  The driver
+#  contains no USB: it is the SoC-side glue only.
+#
+#  It touches MMIO it owns and nothing else, so its entry point needs no
+#  protocol beyond the boot services table, and it must run before BDS connects
+#  controllers: the FV lists it before BdsDxe for that reason.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION    = 0x00010005
+  BASE_NAME      = A733UsbHostDxe
+  FILE_GUID      = 6f0e1c2a-7b3d-4c8e-9a51-a73300000021
+  MODULE_TYPE    = UEFI_DRIVER
+  VERSION_STRING = 1.0
+  ENTRY_POINT    = A733UsbHostDxeEntryPoint
+
+[Sources]
+  A733UsbHostDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  Platform/Radxa/CubieA7APkg/CubieA7A.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  A733CcuLib
+  A733GpioLib
+  BaseLib
+  DebugLib
+  IoLib
+  ## The registration library that installs the non-discoverable device
+  ## protocol, which is what gives the controller a PCI I/O instance.
+  NonDiscoverableDeviceRegistrationLib
+  PcdLib
+  TimerLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+
+[Pcd]
+  gA733TokenSpaceGuid.PcdA733CcuBase
+
+  ## The R_PIO block, read back after the enables below are driven: the pins'
+  ## level and function words are what prove the pads are driving high.
+  gA733TokenSpaceGuid.PcdA733RpioBase
+
+  ## The board's USB 5 V enable pins, in the R_PIO domain: the USB3 Type-A
+  ## receptacle's VBUS (PL2, net USB0-DRVVBUS through U2) and the USB2 ports
+  ## behind the on-board hub (PM5, net USB_HOST_EN through U5).  Neither is the
+  ## hub's own supply, which is PMIC DCDC1.
+  gCubieA7APkgTokenSpaceGuid.PcdA733UsbPortVbusPin
+  gCubieA7APkgTokenSpaceGuid.PcdA733UsbHubVbusPin
+
+#
+# No depex: the driver installs the non-discoverable device protocol itself
+# (through the registration library) and touches nothing another driver owns,
+# so it has nothing to wait for.  The two drivers that act on what it leaves
+# behind - NonDiscoverablePciDeviceDxe, then EhciDxe - are bound to the handle
+# by the platform's EfiBootManagerConnectAll in BDS.
+#

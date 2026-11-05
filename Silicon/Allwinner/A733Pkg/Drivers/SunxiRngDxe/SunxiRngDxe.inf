@@ -1,0 +1,40 @@
+## @file
+#  SunxiRngDxe - minimal EFI_RNG_PROTOCOL (Raw/PRNG) for the A733.
+#
+#  Copyright (c) 2026, carpi-os contributors.
+#  Portions derived from edk2-a733 (github.com/vehoelite/edk2-a733),
+#  Copyright (c) 2026 carpi-os contributors, BSD-2-Clause-Patent.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = SunxiRngDxe
+  FILE_GUID                      = 4A7330A7-6D61-6340-A7A7-0E7410000001
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = SunxiRngDxeEntry
+
+[Sources]
+  SunxiRngDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  DebugLib
+  BaseLib
+  BaseMemoryLib
+  MemoryAllocationLib
+  TimerLib
+
+[Protocols]
+  gEfiRngProtocolGuid            ## PRODUCES
+
+[Depex]
+  TRUE
+
+[Guids]
+  gEfiRngAlgorithmRaw              ## CONSUMES

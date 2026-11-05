@@ -1,0 +1,32 @@
+Contributors and how to contribute
+==================================
+
+Copyright (c) 2026, edk2-a733 contributors.
+SPDX-License-Identifier: BSD-2-Clause-Patent
+
+Authorship
+----------
+  Alvin Sun <sk.alvin.x@gmail.com>   platform, silicon packages, driver, bring-up
+
+The code in this repository was written with AI assistance inside an
+interactive session, and every functional change was built and then tested on
+a Radxa Cubie A7A: flashed, booted, and measured (sampling-window sweeps are
+judged on the data each tap returns, throughputs are measured on the board,
+and every speed mode has a revert path).  Claims in commit messages are the
+measurements that were taken, not estimates.
+
+Contributing
+------------
+  - Licence: BSD-2-Clause-Patent (see LICENSE).  By contributing you agree to
+    license your contribution under it.
+  - Sign-off: every commit needs `Signed-off-by: Your Name <you@example.com>`,
+    certifying the Developer Certificate of Origin (DCO 1.1).  Use a real
+    identity; placeholder or localhost addresses are rejected.
+  - Style: EDK2 coding style, 2-space indent, 80 columns, `EFI_STATUS`
+    returns, SPDX header in every new file.
+  - Testing: hardware behaviour must be measured, not assumed.  For anything
+    touching the storage path, state which mode was negotiated, what the
+    sample/strobe taps were, and what the read-back showed.
+  - Provenance: do not paste code from GPL sources or from vendor trees into
+    this repository.  If you must reference vendor behaviour, describe the
+    requirement and implement it independently; see NOTICE.

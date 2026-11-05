@@ -1,0 +1,189 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (for example v0.1.0)'
+        required: true
+      prerelease:
+        description: 'Mark the release as a pre-release'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+env:
+  ARISC_TOOLS_URL: ${{ vars.ARISC_TOOLS_URL || 'https://media.githubusercontent.com/media/bhgv/Allwinner-R128S2-SDK-09/master/lichee/rtos/tools/riscv64-elf-x86_64-20201104.tar.gz' }}
+  ARISC_REF: a733-arisc
+  BL31_REF: a733-bl31
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Resolve release metadata
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag="${{ inputs.tag }}"
+            prerelease="${{ inputs.prerelease }}"
+          else
+            tag="${GITHUB_REF_NAME}"
+            case "$tag" in
+              *-rc*|*-alpha*|*-beta*) prerelease="true" ;;
+              *) prerelease="false" ;;
+            esac
+          fi
+          case "$tag" in
+            v*) ;;
+            *) echo "::error::release tag must start with v"; exit 1 ;;
+          esac
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+
+      - name: Install build dependencies
+        run: |
+          apt_opts=(-o Acquire::ForceIPv4=true -o Acquire::Retries=3
+                    -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20)
+          ok=
+          for attempt in 1 2 3; do
+            if timeout 180 sudo apt-get "${apt_opts[@]}" update; then
+              ok=1
+              break
+            fi
+            echo "apt-get update failed, attempt $attempt"
+            sleep 10
+          done
+          [ -n "$ok" ] || { echo "::error::apt-get update failed"; exit 1; }
+          ok=
+          for attempt in 1 2 3; do
+            if timeout 300 sudo apt-get "${apt_opts[@]}" install -y \
+                 acpica-tools uuid-dev gcc-aarch64-linux-gnu device-tree-compiler; then
+              ok=1
+              break
+            fi
+            echo "apt-get install failed, attempt $attempt"
+            sleep 10
+          done
+          [ -n "$ok" ] || { echo "::error::apt-get install failed"; exit 1; }
+
+      - name: Fetch EDK2
+        run: |
+          git clone --filter=blob:none https://github.com/tianocore/edk2.git \
+            "$RUNNER_WORKSPACE/edk2"
+          git -C "$RUNNER_WORKSPACE/edk2" checkout 4208d71dab
+          git -C "$RUNNER_WORKSPACE/edk2" submodule update --init --recursive
+
+      - name: Build the EDK2 firmware
+        env:
+          EDK2: ${{ runner.workspace }}/edk2
+        run: ./build.sh
+
+      - name: Build BL31
+        run: |
+          git clone https://github.com/alvinsun039/arm-trusted-firmware.git \
+            "$RUNNER_WORKSPACE/tf-a"
+          git -C "$RUNNER_WORKSPACE/tf-a" checkout "$BL31_REF"
+          (cd "$RUNNER_WORKSPACE/tf-a" && ./build.sh)
+          test -s "$RUNNER_WORKSPACE/tf-a/build/sun60iw2p1/release/bl31.bin"
+
+      - name: Build ARISC
+        env:
+          LICHEE_DRAMLIB_PATH: ${{ runner.workspace }}/allwinner-dramlib
+        run: |
+          git clone https://github.com/alvinsun039/arisc.git \
+            "$RUNNER_WORKSPACE/arisc"
+          git -C "$RUNNER_WORKSPACE/arisc" checkout "$ARISC_REF"
+          git clone https://github.com/radxa/allwinner-dramlib.git \
+            "$RUNNER_WORKSPACE/allwinner-dramlib"
+          git -C "$RUNNER_WORKSPACE/allwinner-dramlib" checkout b1c31a9
+
+          mkdir -p "$RUNNER_TEMP/tools"
+          curl -L --fail --retry 3 -o "$RUNNER_TEMP/tools.tar.gz" "$ARISC_TOOLS_URL"
+          tar xzf "$RUNNER_TEMP/tools.tar.gz" -C "$RUNNER_TEMP/tools"
+          cc=$(find "$RUNNER_TEMP/tools" -name riscv64-unknown-elf-gcc | head -1)
+          test -n "$cc" || {
+            echo "::error::riscv64-unknown-elf-gcc not found in the toolchain tarball"
+            exit 1
+          }
+          (cd "$RUNNER_WORKSPACE/arisc" &&
+            ARISC_TOOLS="$(dirname "$cc")" ./build.sh)
+          test -s "$RUNNER_WORKSPACE/arisc/ar100s/scp.bin"
+
+      - name: Pack the FEX
+        id: pack
+        env:
+          FD: ${{ github.workspace }}/build-workspace/Build/CubieA7A/DEBUG_GCC/FV/CUBIEA7A_EFI.fd
+          BL31: ${{ runner.workspace }}/tf-a/build/sun60iw2p1/release/bl31.bin
+          SCP: ${{ runner.workspace }}/arisc/ar100s/scp.bin
+          OPTEE_URL: ${{ vars.OPTEE_URL }}
+        run: |
+          tag="${{ steps.meta.outputs.tag }}"
+          fex="a7a_m1_${tag}.fex"
+          optee=/nonexistent
+          if [ -n "${OPTEE_URL:-}" ]; then
+            curl -L --fail --retry 3 -o "$RUNNER_TEMP/optee.bin" "$OPTEE_URL"
+            optee="$RUNNER_TEMP/optee.bin"
+          fi
+          FD="$FD" BL31="$BL31" SCP="$SCP" OPTEE="$optee" \
+            tools/pack/pack.sh "$fex"
+          echo "fex=$fex" >> "$GITHUB_OUTPUT"
+
+      - name: Write release metadata
+        run: |
+          {
+            echo "edk2-a733 $(git rev-parse HEAD)"
+            echo "tf-a $(git -C "$RUNNER_WORKSPACE/tf-a" rev-parse HEAD)"
+            echo "arisc $(git -C "$RUNNER_WORKSPACE/arisc" rev-parse HEAD)"
+            echo "dramlib $(git -C "$RUNNER_WORKSPACE/allwinner-dramlib" rev-parse HEAD)"
+            echo "toolchain $ARISC_TOOLS_URL"
+            echo "optee ${OPTEE_URL:-omitted}"
+          } > SOURCES.txt
+          sha256sum "${{ steps.pack.outputs.fex }}" > SHA256SUMS
+          cat > NOTES.md <<NOTES
+          A733 boot package (FEX) ${{ steps.meta.outputs.tag }}
+
+          Contents: EDK2 BL33 firmware, BL31, the ARISC firmware and its
+          configuration DTB.  OP-TEE is omitted unless the repository
+          variable OPTEE_URL points at the vendor blob.
+
+          Built from:
+          - edk2-a733 ${{ github.sha }}
+          - TF-A ${{ env.BL31_REF }}
+          - ARISC ${{ env.ARISC_REF }}
+          - allwinner-dramlib b1c31a9
+
+          Flash the FEX at sector 24576 with tools/pack/flash.py; boot0 is
+          a separate vendor input.  Verify the download with SHA256SUMS.
+
+          The FEX combines BSD-2-Clause-Patent (EDK2, pack tools),
+          BSD-3-Clause (BL31) and the ARISC vendor terms.  Source links
+          are in SOURCES.txt.
+          NOTES
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          args=(--repo "$GITHUB_REPOSITORY" \
+                --title "A733 FEX ${{ steps.meta.outputs.tag }}" \
+                --notes-file NOTES.md)
+          if [ "${{ steps.meta.outputs.prerelease }}" = "true" ]; then
+            args+=(--prerelease)
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/${{ steps.meta.outputs.tag }}" >/dev/null 2>&1; then
+            args+=(--verify-tag)
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            args+=(--target "$GITHUB_SHA")
+          fi
+          gh release create "${{ steps.meta.outputs.tag }}" "${args[@]}" \
+            "${{ steps.pack.outputs.fex }}" SHA256SUMS SOURCES.txt

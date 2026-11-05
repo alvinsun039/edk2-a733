@@ -1,0 +1,82 @@
+## @file
+#  Radxa Cubie A7A board package.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  DEC_SPECIFICATION = 0x00010005
+  PACKAGE_NAME      = CubieA7APkg
+  PACKAGE_GUID      = b2c3d4e5-6f70-4182-93a4-a7a000000001
+  PACKAGE_VERSION   = 0.1
+
+[Includes]
+  Include
+
+[LibraryClasses]
+  ## This board's SMHC controller table: which controllers exist, and the base,
+  ## interrupt, CCU module, pad group and card type of each.  The class belongs
+  ## to the package that implements it, so A733SmhcDxe - a silicon driver that
+  ## knows no controller by name - consumes it from here.
+  A733SmhcBoardLib|Include/Library/A733SmhcBoardLib.h
+
+[Guids]
+  gCubieA7APkgTokenSpaceGuid = { 0xb2c3d4e5, 0x6f70, 0x4182, { 0x93, 0xa4, 0xa7, 0xa0, 0x00, 0x00, 0x00, 0x01 } }
+  ## NV marker recording which PcdA733FastbootBoot value the stored BootOrder was
+  ## last arranged for, so PlatformBootManagerLib arranges it when the policy
+  ## changes and leaves a user's own order alone otherwise.
+  gCubieA7ABootPolicyGuid = { 0xb2c3d4e5, 0x6f70, 0x4182, { 0x93, 0xa4, 0xa7, 0xa0, 0x00, 0x00, 0x00, 0x02 } }
+
+[PcdsFixedAtBuild]
+  # The FD is loaded by TF-A at PRELOADED_BL33_BASE.
+  gCubieA7APkgTokenSpaceGuid.PcdFdBaseAddress|0x41000000|UINT64|0x00000100
+  gCubieA7APkgTokenSpaceGuid.PcdFdSize|0x00800000|UINT32|0x00000101
+
+  #
+  # The two R_PIO pins that enable the board's USB 5 V rails.  Values are pin
+  # numbers in the R_PIO domain (A733_RPIO_PIN: bank * 32 + bit, bank 0 = PL and
+  # bank 1 = PM), so PL2 is 2 and PM5 is 37.
+  #
+  # PcdA733UsbPortVbusPin is the rail the board's device tree gives the PHY the
+  # USB1 host port runs on: sun60i-a733-radxa-a7a.dts models it as reg_usb_vbus,
+  # "gpio = <&r_pio 0 2 GPIO_ACTIVE_HIGH>; enable-active-high", and wires it to
+  # the usbphy node's usb1_vbus-supply.
+  #
+  # PcdA733UsbHubVbusPin is the switch in front of the on-board hub the
+  # user-reachable ports hang off: schematic page 14 (USB3.0/2.0/HUB), net
+  # USB_HOST_EN into U5's enable, output VCC5V0_USB20 to the hub and to the
+  # ports' VBUS.  That pin is PM5.
+  #
+  # Both are active-high load-switch enables, and the vendor device trees name
+  # them the other way round, so A733UsbHostDxe drives both.
+  #
+  gCubieA7APkgTokenSpaceGuid.PcdA733UsbPortVbusPin|2|UINT32|0x00000102
+  gCubieA7APkgTokenSpaceGuid.PcdA733UsbHubVbusPin|37|UINT32|0x00000103
+
+  #
+  # Whether the board comes up as an Android fastboot device.
+  #
+  # TRUE registers EmbeddedPkg's AndroidFastbootApp as the boot option BDS
+  # boots first, so the OTG port enumerates as 1f3a:1010 without anything being
+  # typed.  The application leaves on RETURN or SPACE, and BDS then boots the
+  # option after it, which is the UEFI Shell.  FALSE makes the Shell the first
+  # option and leaves fastboot as a boot option the Shell's bcfg can reach.
+  #
+  gCubieA7APkgTokenSpaceGuid.PcdA733FastbootBoot|TRUE|BOOLEAN|0x00000104
+
+  #
+  # Whether PlatformBootManagerLib mirrors the non-volatile variable set to
+  # \EFI\A7A\vars.bin on a FAT volume and restores it onto a store that has
+  # never been written.  The SPI NOR store stays authoritative either way; the
+  # file only makes a board's boot order and settings travel with its card.
+  #
+  gCubieA7APkgTokenSpaceGuid.PcdA733VarSnapshotEnable|TRUE|BOOLEAN|0x00000105
+
+  #
+  # Which medium this build targets: 0 is the microSD card, 1 is the eMMC.
+  # The variable snapshot follows it - the SD build keeps \EFI\A7A\vars.bin on
+  # the card, the eMMC build keeps it on the eMMC's FAT volume - so a board's
+  # settings travel with the medium its firmware was built to boot from.
+  #
+  gCubieA7APkgTokenSpaceGuid.PcdA733BootMedium|0|UINT8|0x00000106

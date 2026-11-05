@@ -1,0 +1,30 @@
+## @file
+#  Network stack IPv4 gating library: same mechanism as
+#  NetworkStackEnabledLib, keyed on gNetworkStackIpv4EnabledProtocolGuid.
+#  Links into Ip4Dxe so the IPv4 stack only starts when enabled from
+#  Setup.  IPv6 is not built on the A7A (no Ip6Dxe); gating libs only
+#  exist for the drivers in this platform's build.
+#
+#  Ported from edk2-rockchip (Copyright (c) 2025 Mario Balanica),
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x0001001B
+  BASE_NAME                      = NetworkStackIpv4EnabledLib
+  FILE_GUID                      = 4A7330D4-49E4-40A7-33AA-210733100001
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = NetworkStackIpv4EnabledLib|DXE_DRIVER
+  CONSTRUCTOR                    = NetworkStackEnabledLibInitialize
+
+[Sources]
+  NetworkStackEnabledLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[Depex]
+  gNetworkStackIpv4EnabledProtocolGuid

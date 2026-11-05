@@ -1,0 +1,54 @@
+## @file
+#  BootAndroid — EDK2 hand-off to an AOSP16 GKI kernel on eMMC.
+#  Reads boot_a / init_boot_a / vendor_boot_a, assembles the GKI initrd
+#  ([vendor ramdisk][generic ramdisk][bootconfig+trailer]), exposes it via
+#  the Linux LoadFile2 protocol, and LoadImage/StartImage the EFI-stub
+#  kernel.  DTB comes from the FDT configuration table installed by
+#  PlatformBootManagerLib.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  Portions derived from edk2-a733 (github.com/vehoelite/edk2-a733),
+#  Copyright (c) 2026 carpi-os contributors, BSD-2-Clause-Patent.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010006
+  BASE_NAME                      = BootAndroid
+  FILE_GUID                      = 6F4B1C22-8A7D-4E5B-9C01-3D2E5F8A9B44
+  MODULE_TYPE                    = UEFI_APPLICATION
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = BootAndroidEntry
+
+[Sources]
+  BootAndroid.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  UefiApplicationEntryPoint
+  UefiLib
+  UefiBootServicesTableLib
+  MemoryAllocationLib
+  BaseMemoryLib
+  DevicePathLib
+  DebugLib
+  BaseLib
+  PcdLib
+  PrintLib
+
+[Protocols]
+  gEfiBlockIoProtocolGuid
+  gEfiPartitionInfoProtocolGuid
+  gEfiLoadedImageProtocolGuid
+  gEfiLoadFile2ProtocolGuid
+  gEfiDevicePathProtocolGuid
+
+[Pcd]
+  gA733TokenSpaceGuid.PcdBootAndroidExtraCmdline
+
+[Depex]
+  TRUE
