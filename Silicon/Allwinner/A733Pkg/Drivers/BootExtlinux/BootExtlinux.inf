@@ -1,0 +1,52 @@
+## @file
+#  BootExtlinux — the U-Boot sysboot path, native in EDK2.
+#
+#  Finds extlinux/extlinux.conf on any SimpleFileSystem volume (volume root
+#  or boot/), parses it, shows a boot menu, and hands the selected kernel to
+#  the EFI stub with the entry's DTB as the FDT configuration table, its
+#  initrd over LoadFile2, and APPEND as the kernel command line.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION    = 0x00010006
+  BASE_NAME      = BootExtlinux
+  FILE_GUID      = 6B2E9C41-8A57-4D3F-9E02-71B5C83A641D
+  MODULE_TYPE    = UEFI_APPLICATION
+  VERSION_STRING = 1.0
+  ENTRY_POINT    = BootExtlinuxEntry
+
+[Sources]
+  BootExtlinux.c
+  ExtlinuxMenu.c
+  ExtlinuxParse.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  UefiApplicationEntryPoint
+  UefiBootServicesTableLib
+  UefiLib
+  MemoryAllocationLib
+  BaseMemoryLib
+  DevicePathLib
+  DebugLib
+  BaseLib
+  PcdLib
+
+[Protocols]
+  gEfiSimpleFileSystemProtocolGuid
+  gEfiLoadedImageProtocolGuid
+  gEfiLoadFile2ProtocolGuid
+  gEfiDevicePathProtocolGuid
+
+[Guids]
+  gEfiFileInfoGuid
+
+[Pcd]
+  gA733TokenSpaceGuid.PcdBootExtlinuxFdtFile

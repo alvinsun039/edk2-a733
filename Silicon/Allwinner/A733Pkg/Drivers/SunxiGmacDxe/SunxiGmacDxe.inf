@@ -1,0 +1,54 @@
+## @file
+#  SunxiGmacDxe - Allwinner A733 GMAC0 board bring-up (Cubie A7A).
+#
+#  Clocks/de-resets GMAC0, muxes PH0..PH15 to rgmii0, releases the PHY
+#  reset, then registers the GMAC0 MMIO window as a NonDiscoverable device
+#  so DwEmacSnpDxe (the DesignWare MAC SNP driver) can bind and drive the
+#  MAC + Maxio PHY.
+#
+#  Copyright (c) 2026, carpi-os contributors.
+#  Portions derived from edk2-a733 (github.com/vehoelite/edk2-a733),
+#  Copyright (c) 2026 carpi-os contributors, BSD-2-Clause-Patent.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = SunxiGmacDxe
+  FILE_GUID                      = 4A7330A7-6D61-6340-A7A7-0E7410000000
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = SunxiGmacDxeEntry
+
+[Sources]
+  SunxiGmacDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  UefiDriverEntryPoint
+  UefiBootServicesTableLib
+  DebugLib
+  IoLib
+  BaseLib
+  PcdLib
+  TimerLib
+  MemoryAllocationLib
+  NonDiscoverableDeviceRegistrationLib
+  A733ClockLib
+  A733GpioLib
+  A733PmicLib
+  A733TwiLib
+
+[Pcd]
+  gA733TokenSpaceGuid.PcdGmac0MacAddress
+  gA733TokenSpaceGuid.PcdGmacPhyResetGpio  ## CONSUMES
+  gA733TokenSpaceGuid.PcdGmacPhyMdioAddr   ## CONSUMES
+  gA733TokenSpaceGuid.PcdGmacRgmiiTxDelay  ## CONSUMES
+  gA733TokenSpaceGuid.PcdGmacRgmiiRxDelay  ## CONSUMES
+
+[Depex]
+  TRUE

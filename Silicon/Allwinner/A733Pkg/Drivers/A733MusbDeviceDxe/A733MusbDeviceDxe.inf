@@ -1,0 +1,73 @@
+#/** @file
+#
+#  MUSB device controller (OTG port) for the Allwinner A733, Cubie A7A.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+#**/
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = A733MusbDeviceDxe
+  FILE_GUID                      = 3d0f2f0a-6b21-4d47-9a55-2f5f0d7a7331
+  MODULE_TYPE                    = UEFI_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = A733MusbDeviceEntryPoint
+
+[Sources.common]
+  A733MusbDeviceDxe.c
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  IoLib
+  MemoryAllocationLib
+  PcdLib
+  TimerLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+
+[Guids]
+  ## The ExitBootServices event group, used to cancel the service timer.
+  gEfiEventExitBootServicesGuid
+
+[Protocols]
+  ## Produced: the minimal device-side protocol the Android fastboot transport
+  ## (EmbeddedPkg/Drivers/AndroidFastbootTransportUsbDxe) talks to.
+  gUsbDeviceProtocolGuid
+  ## Consumed, optionally: the controller's interrupt, which carries the bulk
+  ## data path.  ArmGicDxe installs both variants in one call; the second is
+  ## preferred because it can also set the source's trigger type, and the MUSB
+  ## line is a level.  Neither is required - a platform without them leaves the
+  ## driver polled rather than unstarted, so there is deliberately no depex.
+  gHardwareInterruptProtocolGuid
+  gHardwareInterrupt2ProtocolGuid
+
+[Pcd]
+  ## The CCU window: the device half of this driver's clock and reset live in
+  ## USB0_CLK/USB0_BGR, which this driver addresses relative to it.
+  gA733TokenSpaceGuid.PcdA733CcuBase
+
+  ## Read-only, and only for the interrupt diagnostic: the distributor's
+  ## group/enable/trigger words for the controller's interrupt are reported once
+  ## so a boot log can say where an interrupt that never arrives was lost.
+  gArmTokenSpaceGuid.PcdGicDistributorBase
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  ArmPkg/ArmPkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+#
+# No depex: the driver owns the MUSB core outright and waits for nothing, but
+# it must be dispatched before FastbootTransportUsbDxe, whose entry point
+# locates this protocol once and does not retry - the FV lists it first for
+# that reason.  The interrupt protocol above is claimed opportunistically for
+# the same reason: a depex on it would leave the port unserviced on a platform
+# that does not install it, and this driver's job is to answer the host whether
+# the bulk data path ends up interrupt-driven or polled.
+#

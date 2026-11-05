@@ -1,0 +1,12 @@
+// /** @file
+// Platform logo image definition.
+//
+// Copyright (c) 2026, edk2-a733 contributors.
+// Portions derived from edk2-a733 (github.com/vehoelite/edk2-a733),
+// Copyright (c) 2026 carpi-os contributors, BSD-2-Clause-Patent.
+//
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+//
+// **/
+
+#image IMG_LOGO Logo.bmp

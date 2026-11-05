@@ -1,0 +1,4 @@
+# Copyright (c) 2026, edk2-a733 contributors.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+__pycache__/
+*.pyc

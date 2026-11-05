@@ -1,0 +1,191 @@
+/** @file
+*  Multiple APIC Description Table (MADT) — Allwinner A733 (sun60iw2)
+*
+*  8 cores: cluster0 = 6x Cortex-A55 (MPIDR 0x000..0x500)
+*           cluster1 = 2x Cortex-A76 (MPIDR 0x600/0x700)
+*  GIC: no GICv3/GICv4 entries (v1 has no ITS, matching the DTB intc node).
+*  GICD 0x03400000 / GICR 0x03460000 (len 0xFF004 = 8 cores x (64 KB redist +
+*  64 KB SGI/PPI) - 4 KB, matching the BSP DTS redistributor description).
+*
+*  Syntax, revision and field layout follow the rk3588 template
+*  (edk2-rockchip Madt.aslc).
+*
+*  Portions derived from edk2-a733 (github.com/vehoelite/edk2-a733),
+*  Copyright (c) 2026 carpi-os contributors, BSD-2-Clause-Patent.
+*  SPDX-License-Identifier: BSD-2-Clause-Patent
+**/
+
+#include <AcpiHelperMacros.h>
+#include <Library/ArmLib.h>
+#include <Library/PcdLib.h>
+#include <IndustryStandard/Acpi.h>
+
+#include "AcpiTables.h"
+
+//
+// Multiple APIC Description Table
+//
+#pragma pack (1)
+
+typedef struct {
+  EFI_ACPI_6_0_MULTIPLE_APIC_DESCRIPTION_TABLE_HEADER    Header;
+  EFI_ACPI_6_0_GIC_STRUCTURE                             GicInterfaces[8];
+  EFI_ACPI_6_0_GIC_DISTRIBUTOR_STRUCTURE                 GicDistributor;
+  EFI_ACPI_6_0_GICR_STRUCTURE                            GicRedistributors;
+} EFI_ACPI_6_0_MULTIPLE_APIC_DESCRIPTION_TABLE;
+
+#pragma pack ()
+
+EFI_ACPI_6_0_MULTIPLE_APIC_DESCRIPTION_TABLE  Madt = {
+  {
+    ACPI_HEADER (
+      EFI_ACPI_6_0_MULTIPLE_APIC_DESCRIPTION_TABLE_SIGNATURE,
+      EFI_ACPI_6_0_MULTIPLE_APIC_DESCRIPTION_TABLE,
+      EFI_ACPI_6_0_MULTIPLE_APIC_DESCRIPTION_TABLE_REVISION
+      ),
+    //
+    // MADT specific fields
+    //
+    0, // LocalApicAddress
+    0, // Flags
+  },
+  {
+    // Format: EFI_ACPI_6_0_GICC_STRUCTURE_INIT(GicId, AcpiCpuUid, Mpidr,
+    //                                          Flags,
+    //                                          PmuIrq, GicBase, GicVBase, GicHBase, GsivId, GicRBase, Efficiency)
+    // Note: The GIC Structure of the primary CPU must be the first entry
+    // (see note in 5.2.12.14 GICC Structure of ACPI v6.0).
+    // PmuIrq 23 = PPI 7 (arm_pmu,BSP DTS interrupts <GIC_PPI 7>),
+    // GsivId 25 = VGIC maintenance PPI 9。
+    EFI_ACPI_6_0_GICC_STRUCTURE_INIT (
+      // A55-0
+      0,
+      0,
+      GET_MPID (0, 0x000),
+      EFI_ACPI_6_0_GIC_ENABLED,
+      23,
+      0,
+      0,
+      0,
+      25,
+      0,
+      0
+      ),
+    EFI_ACPI_6_0_GICC_STRUCTURE_INIT (
+      // A55-1
+      1,
+      1,
+      GET_MPID (0, 0x100),
+      EFI_ACPI_6_0_GIC_ENABLED,
+      23,
+      0,
+      0,
+      0,
+      25,
+      0,
+      0
+      ),
+    EFI_ACPI_6_0_GICC_STRUCTURE_INIT (
+      // A55-2
+      2,
+      2,
+      GET_MPID (0, 0x200),
+      EFI_ACPI_6_0_GIC_ENABLED,
+      23,
+      0,
+      0,
+      0,
+      25,
+      0,
+      0
+      ),
+    EFI_ACPI_6_0_GICC_STRUCTURE_INIT (
+      // A55-3
+      3,
+      3,
+      GET_MPID (0, 0x300),
+      EFI_ACPI_6_0_GIC_ENABLED,
+      23,
+      0,
+      0,
+      0,
+      25,
+      0,
+      0
+      ),
+    EFI_ACPI_6_0_GICC_STRUCTURE_INIT (
+      // A55-4
+      4,
+      4,
+      GET_MPID (0, 0x400),
+      EFI_ACPI_6_0_GIC_ENABLED,
+      23,
+      0,
+      0,
+      0,
+      25,
+      0,
+      0
+      ),
+    EFI_ACPI_6_0_GICC_STRUCTURE_INIT (
+      // A55-5
+      5,
+      5,
+      GET_MPID (0, 0x500),
+      EFI_ACPI_6_0_GIC_ENABLED,
+      23,
+      0,
+      0,
+      0,
+      25,
+      0,
+      0
+      ),
+    EFI_ACPI_6_0_GICC_STRUCTURE_INIT (
+      // A76-0
+      6,
+      6,
+      GET_MPID (0, 0x600),
+      EFI_ACPI_6_0_GIC_ENABLED,
+      23,
+      0,
+      0,
+      0,
+      25,
+      0,
+      0
+      ),
+    EFI_ACPI_6_0_GICC_STRUCTURE_INIT (
+      // A76-1
+      7,
+      7,
+      GET_MPID (0, 0x700),
+      EFI_ACPI_6_0_GIC_ENABLED,
+      23,
+      0,
+      0,
+      0,
+      25,
+      0,
+      0
+      ),
+  },
+  // GIC Distributor Entry
+  EFI_ACPI_6_0_GIC_DISTRIBUTOR_INIT (
+    0,
+    FixedPcdGet64 (PcdA733GicDistBase),
+    0,
+    EFI_ACPI_6_0_GIC_V3
+    ),
+  // GIC Redistributors Entry
+  EFI_ACPI_6_0_GIC_REDISTRIBUTOR_INIT (
+    FixedPcdGet64 (PcdA733GicRedistBase),
+    0xFF004
+    ),
+};
+
+//
+// Reference the table being generated to prevent the optimizer
+// from removing the data structure from the executable
+//
+VOID *CONST  ReferenceAcpiTable = &Madt;

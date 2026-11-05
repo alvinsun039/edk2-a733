@@ -1,0 +1,69 @@
+#/** @file
+#  DW Emac Simple Networking Protocol Driver (SNP) DXE Driver
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+#  The original software modules are licensed as follows:
+#
+#  Copyright (c) 2012-2014, ARM Limited. All rights reserved.
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+#  Adapted for the Allwinner A733 GMAC0 (DesignWare MAC 5.20): the
+#  gDwEmacNetNonDiscoverableDeviceGuid is provided by A733Pkg.dec instead
+#  of the upstream DesignWare.dec package.
+#**/
+[Defines]
+  INF_VERSION                    = 1.27
+  BASE_NAME                      = DwEmacSnpDxe
+  FILE_GUID                      = 06f3315f-9fe6-4938-b83f-2c072af802ba
+  MODULE_TYPE                    = UEFI_DRIVER
+  VERSION_STRING                 = 0.1
+  ENTRY_POINT                    = DwEmacSnpDxeEntry
+
+[Sources.common]
+  ComponentName.c
+  DriverBinding.c
+  DwEmacSnpDxe.c
+  EmacDxeUtil.c
+  PhyDxeUtil.c
+  DwEmacSnpDxe.h
+  EmacDxeUtil.h
+  PhyDxeUtil.h
+
+[Packages]
+  EmbeddedPkg/EmbeddedPkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  MdePkg/MdePkg.dec
+  NetworkPkg/NetworkPkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  CacheMaintenanceLib
+  DebugLib
+  DevicePathLib
+  DmaLib
+  IoLib
+  PcdLib
+  NetLib
+  TimerLib
+  UefiDriverEntryPoint
+  UefiLib
+
+[Protocols]
+  gEdkiiNonDiscoverableDeviceProtocolGuid
+  gEfiDevicePathProtocolGuid             ## PRODUCES
+  gEfiDriverBindingProtocolGuid          ## PRODUCES
+  gEfiMetronomeArchProtocolGuid
+  gEfiSimpleNetworkProtocolGuid          ## PRODUCES
+
+[Guids]
+  gDwEmacNetNonDiscoverableDeviceGuid  ## TO_START
+
+[Depex]
+  TRUE
+
+[Pcd]
+  gA733TokenSpaceGuid.PcdGmacPhyMdioAddr   ## CONSUMES

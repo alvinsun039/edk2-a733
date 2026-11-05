@@ -1,0 +1,93 @@
+## @file
+#  Firmware volume block protocol over the A733's SPI NOR variable window.
+#
+#  Provides the RAM window VariableRuntimeDxe reads its store from at
+#  PcdFlashNvStorageVariableBase64 and the block protocol it erases and
+#  programs through, keeping the two in step with a W25Q128-class SPI NOR at
+#  chip offset 0xF00000.  Publishes gEdkiiNvVarStoreFormattedGuid once the
+#  store's headers are in place, which is what VariableRuntimeDxe (through
+#  EmbeddedPkg's NvVarStoreFormattedLib) and FaultTolerantWriteDxe both need
+#  before they initialise.
+#
+#  A runtime driver, because an OS SetVariable is served by this code after
+#  ExitBootServices: the window is EfiRuntimeServicesData and SPI0 is described
+#  to the OS as runtime device memory for exactly that reason.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION    = 0x00010005
+  BASE_NAME      = A733FvbDxe
+  FILE_GUID      = 6f0e1c2a-7b3d-4c8e-9a51-a73300000020
+  MODULE_TYPE    = DXE_RUNTIME_DRIVER
+  VERSION_STRING = 1.0
+  ENTRY_POINT    = A733FvbDxeEntryPoint
+
+[Sources]
+  A733FvbDxe.c
+  A733SpiNor.c
+  A733SpiNor.h
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  # SPI0's clock, gate and pads during bring-up.
+  A733CcuLib
+  A733GpioLib
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  # gDS, for the runtime description of SPI0's registers.
+  DxeServicesTableLib
+  IoLib
+  MemoryAllocationLib
+  PcdLib
+  # MicroSecondDelay, for the command timeouts.
+  TimerLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  # EfiConvertPointer, in the virtual address change handler.
+  UefiRuntimeLib
+
+[Protocols]
+  ## PRODUCES
+  gEfiFirmwareVolumeBlockProtocolGuid
+
+[Guids]
+  ## PRODUCES ## the store's headers are in place
+  gEdkiiNvVarStoreFormattedGuid
+
+  ## CONSUMES ## the header this driver writes and validates
+  gEfiSystemNvDataFvGuid
+  gEfiAuthenticatedVariableGuid
+
+  ## CONSUMES ## the virtual address change notification
+  gEfiEventVirtualAddressChangeGuid
+
+[Pcd]
+  ## The window this driver reserves, fills from the NOR and publishes.
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase64
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase
+  gA733TokenSpaceGuid.PcdA733CcuBase
+  gA733TokenSpaceGuid.PcdA733GpioBase
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase64
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingBase
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingSize
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase64
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareBase
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize
+
+#
+# The block protocol and the formatted-store signal are both published from the
+# entry point; nothing has to have run before this driver, so there is no depex
+# beyond the DXE core's own.
+#
+[Depex]
+  TRUE

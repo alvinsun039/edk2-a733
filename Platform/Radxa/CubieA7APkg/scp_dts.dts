@@ -1,0 +1,81 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * ARISC (E902) configuration FDT for the Radxa Cubie A7A.
+ *
+ * boot0 copies this file into the boot package as the "dtb" item and the
+ * item loader places it at 0x41200000.  AriscStartupDxe patches the /dram
+ * words with the parameters boot0 trained on the board, then hands the
+ * page to the E902 through SIP FF10.
+ *
+ * /standby_param is the AXP8191 power tree used by the ARISC super-standby.
+ * /aliases is required because the ARISC resolves the node with the
+ * relative path "standby_param" (fdt_path_offset() consults /aliases).
+ *
+ * tools/pack/pack.sh compiles this source with dtc; the DTB is not kept
+ * in the tree.
+ */
+
+/dts-v1/;
+
+/ {
+	aliases {
+		standby_param = "/standby_param";
+	};
+
+	standby_param {
+		/* Rail masks for the suspend power-down (each bit = one AXP
+		 * rail to cut in dm_suspend).  All zero: cutting rails mid-
+		 * standby made the external RTC's pull-up rail collapse and
+		 * its INT line float low, which latched the level-low EINT
+		 * 0.2s in and aborted every cycle.  Revisit only with the
+		 * schematic rail map in hand. */
+		vdd-sys = <0x00 0x00>;
+		vdd-cpub = <0x00 0x00>;
+		vdd-gpu = <0x00 0x00>;
+		vdd-cpu = <0x00 0x00>;
+		vcc-io = <0x00 0x00>;
+		vcc-pll = <0x00 0x00>;
+		vcc25-ufs = <0x00 0x00>;
+		vcc18-12-ufs = <0x00 0x00>;
+		vcc-efuse = <0x00 0x00>;
+		vcc18-hdmi = <0x00 0x00>;
+		avdd-h-combo = <0x00 0x00>;
+
+		vdd-usb = <0x00>;
+	};
+
+	dram {
+		dram_para00 = <0x00000708>;
+		dram_para01 = <0x00000009>;
+		dram_para02 = <0x0e0e0e0e>;
+		dram_para03 = <0x0f0f0f0f>;
+		dram_para04 = <0xec030e0f>;
+		dram_para05 = <0x00000000>;
+		dram_para06 = <0x0000a10a>;
+		dram_para07 = <0x00001001>;
+		dram_para08 = <0x00000000>;
+		dram_para09 = <0x00000000>;
+		dram_para10 = <0x00000000>;
+		dram_para11 = <0x00000006>;
+		dram_para12 = <0x00000000>;
+		dram_para13 = <0x00000000>;
+		dram_para14 = <0x00000000>;
+		dram_para15 = <0x00000012>;
+		dram_para16 = <0x00000044>;
+		dram_para17 = <0x00000000>;
+		dram_para18 = <0x00000034>;
+		dram_para19 = <0x00000000>;
+		dram_para20 = <0x00000086>;
+		dram_para21 = <0x00000000>;
+		dram_para22 = <0x00004040>;
+		dram_para23 = <0x00000000>;
+		dram_para24 = <0x11080503>;
+		dram_para25 = <0x00003800>;
+		dram_para26 = <0x00003514>;
+		dram_para27 = <0x00005f32>;
+		dram_para28 = <0x00000000>;
+		dram_para29 = <0x00000000>;
+		dram_para30 = <0x00010065>;
+		dram_para31 = <0x00000000>;
+	};
+};

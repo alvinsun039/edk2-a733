@@ -1,0 +1,54 @@
+## @file
+#  Boot logo for the Radxa Cubie A7A.
+#
+#  Modelled on edk2-rk3588's per-board LogoDxe (via edk2-a733's copy): a
+#  platform-local copy of the MdeModulePkg logo driver providing
+#  EdkiiPlatformLogo, so BootLogoLib draws it centred in
+#  PlatformBootManagerAfterConsole.
+#
+#  The bitmap is 1920x1080 - this board's only console is the HDMI
+#  pipeline (A733HdmiDxe) at the 1080p anchor - and is a 24 bit
+#  uncompressed Windows bitmap whose background matches the opaque black
+#  the framebuffer is initialised with, so it blends into the screen
+#  surround.  It shows the official Radxa mark, unmodified, above the
+#  board name; BootLogoLib does not scale the image.  The artwork is not
+#  covered by the BSD licence - see NOTICE.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  Portions derived from edk2-a733 (github.com/vehoelite/edk2-a733),
+#  Copyright (c) 2026 carpi-os contributors, BSD-2-Clause-Patent.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = CubieA7ALogoDxe
+  FILE_GUID                      = 7C41E0A2-53B8-4D6C-9E14-A2D6F80B31C7
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = InitializeLogo
+  UEFI_HII_RESOURCE_SECTION      = TRUE
+
+[Sources]
+  Logo.bmp
+  Logo.c
+  Logo.idf
+
+[Packages]
+  MdeModulePkg/MdeModulePkg.dec
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+  DebugLib
+
+[Protocols]
+  gEfiHiiDatabaseProtocolGuid        ## CONSUMES
+  gEfiHiiImageExProtocolGuid         ## CONSUMES
+  gEfiHiiPackageListProtocolGuid     ## PRODUCES CONSUMES
+  gEdkiiPlatformLogoProtocolGuid     ## PRODUCES
+
+[Depex]
+  gEfiHiiDatabaseProtocolGuid AND
+  gEfiHiiImageExProtocolGuid

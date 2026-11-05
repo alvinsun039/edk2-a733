@@ -1,0 +1,47 @@
+#/** @file
+#
+#  Android fastboot platform layer for the Cubie A7A: GPT partitions as BlockIo.
+#
+#  Produces EFI_FASTBOOT_PLATFORM_PROTOCOL (EmbeddedPkg) for
+#  AndroidFastbootApp.  It waits for nothing at load time - the partitions are
+#  found when the application calls into it - so it has no depex, and it is
+#  listed after the fastboot transport in the FV only so the boot log reads in
+#  the order the stack is built.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+#**/
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = A733FastbootPlatformDxe
+  FILE_GUID                      = 7c4a1d62-93be-4f0c-8a11-5b9e2c0d7332
+  MODULE_TYPE                    = UEFI_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = A733FastbootPlatformEntryPoint
+
+[Sources.common]
+  A733FastbootPlatformDxe.c
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  DebugLib
+  MemoryAllocationLib
+  PrintLib
+  PcdLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+
+[Protocols]
+  ## Produced: the platform half of the fastboot stack.
+  gAndroidFastbootPlatformProtocolGuid
+  ## Consumed: the partition's block device and the GPT name next to it.
+  gEfiBlockIoProtocolGuid
+  gEfiPartitionInfoProtocolGuid
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec

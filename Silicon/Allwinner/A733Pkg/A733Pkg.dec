@@ -1,0 +1,174 @@
+## @file
+#  Allwinner A733 package declaration.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  DEC_SPECIFICATION = 0x00010005
+  PACKAGE_NAME      = A733Pkg
+  PACKAGE_GUID      = 6f0e1c2a-7b3d-4c8e-9a51-a73300000001
+  PACKAGE_VERSION   = 0.1
+
+[Includes]
+  Include
+
+[LibraryClasses]
+  ## Clock control unit: module gates, resets, parents, PLL and CPU clocks.
+  A733CcuLib|Include/Library/A733CcuLib.h
+  ## Clock/reset abstraction shared with the GMAC and storage bring-up.
+  A733ClockLib|Include/Library/A733ClockLib.h
+  ## GPIO / pin controller: port function, pull, drive, level and a bank dump.
+  A733GpioLib|Include/Library/A733GpioLib.h
+  ## Polled TWI (I2C) master on S_TWI0.
+  A733TwiLib|Include/Library/A733TwiLib.h
+  ## AXP8191 PMIC on S_TWI0: CLDO rail voltage and enable.
+  A733PmicLib|Include/Library/A733PmicLib.h
+  ## PCK600 power domains: per-domain power on/off/state.
+  A733PowerLib|Include/Library/A733PowerLib.h
+  ## Display clock sequences: keyed AHB/MBUS gates, DE0, HDMI/vo1, HDMI TV rate.
+  A733DisplayClockLib|Include/Library/A733DisplayClockLib.h
+  ## HDMI preset-mode table shared by the HDMI driver and the Setup list.
+  A733HdmiModeLib|Include/Library/A733HdmiModeLib.h
+
+[Guids]
+  gA733TokenSpaceGuid = { 0x6f0e1c2a, 0x7b3d, 0x4c8e, { 0x9a, 0x51, 0xa7, 0x33, 0x00, 0x00, 0x00, 0x01 } }
+  ## Display Mode variable namespace (bound to the DynamicHII PCDs below).
+  gA733SetupFormSetGuid = { 0x2d1b7bb7, 0x34cc, 0x49d0, { 0xa9, 0x8e, 0xf7, 0x2b, 0x95, 0x21, 0xfc, 0x5c } }
+  ## Sink-EDID information the HDMI driver publishes as a config table.
+  gA733EdidInfoGuid = { 0x4a7330e0, 0xed1d, 0x4b6a, { 0x9c, 0x41, 0xa2, 0xb8, 0xd0, 0xed, 0x11, 0x52 } }
+  ## NonDiscoverable-device type GUID of the GMAC0 MMIO window.
+  gDwEmacNetNonDiscoverableDeviceGuid = { 0x401950CD, 0xF9CD, 0x4A65, { 0xAD, 0x8E, 0x84, 0x9F, 0x3B, 0xAF, 0x23, 0x04 } }
+  ## Formset GUID of the network-stack Setup page.
+  gNetworkStackConfigFormSetGuid = { 0x550a8962, 0xff0b, 0x424b, { 0x85, 0x0b, 0x53, 0x7b, 0xf6, 0xc3, 0x70, 0xa0 } }
+
+[Protocols]
+  ## Network stack gating protocols (NetworkStackConfigDxe).
+  gNetworkStackEnabledProtocolGuid = { 0x2d275e9f, 0x00e9, 0x4852, { 0xbe, 0x53, 0x37, 0x53, 0xd9, 0xaa, 0xae, 0xfb } }
+  gNetworkStackIpv4EnabledProtocolGuid = { 0xed51fe7c, 0xd2da, 0x4b8f, { 0xbc, 0x00, 0x5f, 0xf4, 0x22, 0x79, 0x45, 0x04 } }
+  gNetworkStackIpv6EnabledProtocolGuid = { 0x2200a2f3, 0x2c66, 0x4be0, { 0xad, 0x34, 0x92, 0x73, 0x49, 0x5f, 0x25, 0xd1 } }
+  gNetworkStackPxeBootEnabledProtocolGuid = { 0x593a98cb, 0xe069, 0x4578, { 0x98, 0xdb, 0xd8, 0xf1, 0xf9, 0xb6, 0x5c, 0x65 } }
+  gNetworkStackHttpBootEnabledProtocolGuid = { 0x75c3a2d4, 0x81f0, 0x4e3d, { 0xb2, 0x87, 0x13, 0x6d, 0x59, 0xd3, 0x81, 0x17 } }
+
+[PcdsFixedAtBuild]
+  ## UART0 register base; the console and the SPCR table point at it.
+  gA733TokenSpaceGuid.PcdA733UartBase|0x02500000|UINT64|0x00000001
+
+  ## GICv3 distributor and redistributor bases, consumed by the MADT.
+  gA733TokenSpaceGuid.PcdA733GicDistBase|0x03400000|UINT64|0x00000010
+  gA733TokenSpaceGuid.PcdA733GicRedistBase|0x03460000|UINT64|0x00000011
+
+  ## CCU register base (8 KB window) and the separate CPU PLL block base.
+  gA733TokenSpaceGuid.PcdA733CcuBase|0x02002000|UINT64|0x00000003
+  gA733TokenSpaceGuid.PcdA733CpuPllBase|0x08870000|UINT64|0x00000004
+
+  ## Print the clock tree from PlatformBootManagerAfterConsole.
+  gA733TokenSpaceGuid.PcdA733CcuDumpEnable|FALSE|BOOLEAN|0x00000005
+
+  ## GPIO (pin controller) base; the block's window is 8 KB (0x02000000..0x02001FFF).
+  gA733TokenSpaceGuid.PcdA733GpioBase|0x02000000|UINT64|0x00000006
+
+  ## Print every GPIO bank's configured pins from PlatformBootManagerAfterConsole.
+  gA733TokenSpaceGuid.PcdA733GpioDumpEnable|FALSE|BOOLEAN|0x00000007
+
+  ## Print one DEBUG_INFO line per eMMC command (index, argument, raw interrupt
+  ## status, response words) and the EXT_CSD detail from A733SmhcDxe.
+  gA733TokenSpaceGuid.PcdA733SmhcDumpEnable|FALSE|BOOLEAN|0x00000008
+
+  ## S_TWI0 register base (4 KB window, 0x07083000..0x07083FFF) and its input
+  ## clock.  The manual gives APBS1 a typical 24 MHz, which is also the rate
+  ## its own CCR worked examples assume.
+  gA733TokenSpaceGuid.PcdA733TwiBase|0x07083000|UINT64|0x00000009
+  gA733TokenSpaceGuid.PcdA733TwiClockHz|24000000|UINT32|0x0000000A
+
+  ## R_PIO (S_GPIO) base; the block's window is 8 KB (0x07025000..0x07026FFF).
+  ## Its PL bank holds PL0/PL1, the S-TWI0 pins.
+  gA733TokenSpaceGuid.PcdA733RpioBase|0x07025000|UINT64|0x0000000B
+
+  ## Kernel command line BootDebian passes to \Image in LoadOptions.
+  gA733TokenSpaceGuid.PcdBootDebianCmdline|L""|VOID*|0x00000022
+
+  ## Extra tokens BootAndroid appends to the vendor_boot cmdline (console=,
+  ## androidboot.*, earlycon= for this board's UART).
+  gA733TokenSpaceGuid.PcdBootAndroidExtraCmdline|L""|VOID*|0x00000023
+
+  ## Board device tree file name BootExtlinux pairs with an extlinux FDTDIR
+  ## entry.  When the file is absent it falls back to the first .dtb there.
+  gA733TokenSpaceGuid.PcdBootExtlinuxFdtFile|L""|VOID*|0x00000024
+
+  #
+  # GMAC0 / Maxio MAE0621A PHY (board defaults for the Cubie A7A).
+  #
+  gA733TokenSpaceGuid.PcdGmac0MacAddress|0xC618047A1DD4|UINT64|0x00000051
+  gA733TokenSpaceGuid.PcdGmacPhyResetGpio|0x00000710|UINT32|0x00000054
+  gA733TokenSpaceGuid.PcdGmacPhyMdioAddr|1|UINT8|0x00000055
+  gA733TokenSpaceGuid.PcdGmacRgmiiTxDelay|12|UINT8|0x00000056
+  gA733TokenSpaceGuid.PcdGmacRgmiiRxDelay|10|UINT8|0x00000057
+
+  #
+  # SMBIOS (SunxiSmbiosDxe).  An empty string disables that record's string.
+  # Memory type 0x23 = LPDDR5, matching the 8 GiB part this board carries.
+  #
+  gA733TokenSpaceGuid.PcdSmbiosManufacturer|"Radxa"|VOID*|0x00000046
+  gA733TokenSpaceGuid.PcdSmbiosSystemProductName|"Cubie A7A"|VOID*|0x00000047
+  gA733TokenSpaceGuid.PcdSmbiosBaseboardProductName|"Cubie A7A"|VOID*|0x00000048
+  gA733TokenSpaceGuid.PcdSmbiosChassisManufacturer|"Radxa"|VOID*|0x00000049
+  gA733TokenSpaceGuid.PcdSmbiosMemoryType|0x23|UINT8|0x0000004A
+  gA733TokenSpaceGuid.PcdSmbiosMemorySpeed|3600|UINT16|0x0000004B
+
+  #
+  # PCIe root complex (SunxiPcieDxe).  GPIO encoding is the same as the
+  # GMAC PHY reset: [7:0] pin, [15:8] bank, [16] R_PIO domain, [17]
+  # active-high; 0 or 0xFF000000 means "absent, skip".
+  # Cubie A7A (board.dts): power PE11, PERST# PE13, WAKE PE12, all active
+  # high.  Disabled by default, like the reference platform: the combo
+  # SerDes lane this controller needs is the one A733Xhci2Dxe drives for
+  # USB3, so the two cannot be enabled together yet.
+  #
+  gA733TokenSpaceGuid.PcdSunxiPciePowerGpio|0x0002040B|UINT32|0x0000004E
+  gA733TokenSpaceGuid.PcdSunxiPcieResetGpio|0x0002040D|UINT32|0x0000004F
+  gA733TokenSpaceGuid.PcdSunxiPcieWakeGpio|0x0002040C|UINT32|0x00000052
+  gA733TokenSpaceGuid.PcdSunxiPcieEnable|FALSE|BOOLEAN|0x00000050
+
+  ## OS config-table hand-off, bit0 = ACPI install, bit1 = FDT (0x3 = both).
+  gA733TokenSpaceGuid.PcdConfigTableModeDefault|0x3|UINT32|0x0000007B
+
+  #
+  # Network stack cold-boot defaults (NetworkStackConfigDxe Setup page).
+  #
+  gA733TokenSpaceGuid.PcdNetworkStackEnabledDefault|TRUE|BOOLEAN|0x00000070
+  gA733TokenSpaceGuid.PcdNetworkStackIpv4EnabledDefault|TRUE|BOOLEAN|0x00000071
+  gA733TokenSpaceGuid.PcdNetworkStackIpv6EnabledDefault|TRUE|BOOLEAN|0x00000072
+  gA733TokenSpaceGuid.PcdNetworkStackPxeBootEnabledDefault|TRUE|BOOLEAN|0x00000073
+  gA733TokenSpaceGuid.PcdNetworkStackHttpBootEnabledDefault|TRUE|BOOLEAN|0x00000074
+
+  ## Print each PMIC register read and write from A733PmicLib.  The chip-ID
+  ## and CLDO5 result line is printed regardless of this switch.
+  gA733TokenSpaceGuid.PcdA733PmicVerbose|FALSE|BOOLEAN|0x0000000C
+
+[PcdsFixedAtBuild, PcdsPatchableInModule, PcdsDynamic, PcdsDynamicEx]
+  ## OS config-table hand-off mode read by AcpiPlatformDxe at its entry
+  ## point: bit0 ACPI, bit1 FDT.  Fixed here rather than bound to a Setup
+  ## variable because this tree has no Setup application; the platform DSC
+  ## maps it to PcdConfigTableModeDefault.
+  gA733TokenSpaceGuid.PcdConfigTableMode|0x3|UINT32|0x00000080
+
+  ## Display Mode selection, bound to the "DisplayModePreset" variable in
+  ## the gA733SetupFormSetGuid namespace.  A733HdmiDxe reads the variable
+  ## itself (it is a boot-service driver); the PCD carries the CUSTOM
+  ## timings the value selects.  With no Setup application in this tree the
+  ## variable is only ever written by hand, and the driver stays on the
+  ## anchor mode.
+  gA733TokenSpaceGuid.PcdDisplayModePreset|{ 0x0 }|DISPLAY_MODE_PRESET_VARSTORE_DATA|0x00000020 {
+    <Packages>
+      Silicon/Allwinner/A733Pkg/A733Pkg.dec
+    <HeaderFiles>
+      VarStoreData.h
+  }
+  gA733TokenSpaceGuid.PcdDisplayModeCustom|{ 0x0 }|DISPLAY_MODE|0x00000021 {
+    <Packages>
+      Silicon/Allwinner/A733Pkg/A733Pkg.dec
+    <HeaderFiles>
+      A733Display.h
+  }

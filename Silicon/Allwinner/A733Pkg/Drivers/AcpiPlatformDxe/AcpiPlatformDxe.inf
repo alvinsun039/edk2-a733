@@ -1,0 +1,48 @@
+#/** @file
+#
+#  ACPI platform driver (A733)
+#
+#  On the EndOfDxe callback, search the FV by FILE_GUID and install the
+#  ACPI tables; gated by PcdConfigTableMode (default FDT-only).
+#
+#  Copyright (c) 2024, Mario Bălănică <mariobalanica02@gmail.com> (template)
+#
+#  Portions derived from edk2-a733 (github.com/vehoelite/edk2-a733),
+#  Copyright (c) 2026 carpi-os contributors, BSD-2-Clause-Patent.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+#**/
+
+[Defines]
+  INF_VERSION                    = 0x0001001A
+  BASE_NAME                      = AcpiPlatformDxe
+  FILE_GUID                      = 4A7330A1-1A73-4C0C-9E7C-1E11A7330001
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = AcpiPlatformDxeInitialize
+
+[Sources]
+  AcpiPlatformDxe.c
+
+[Packages]
+  EmbeddedPkg/EmbeddedPkg.dec
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  AcpiLib
+  DebugLib
+  PcdLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+
+[Guids]
+  gEfiEndOfDxeEventGroupGuid
+
+[Pcd]
+  gA733TokenSpaceGuid.PcdConfigTableMode
+  gA733TokenSpaceGuid.PcdConfigTableModeDefault
+
+[Depex]
+  TRUE

@@ -1,0 +1,32 @@
+## @file
+#  A733 Clock / Reset Controller abstraction library
+#
+#  Converges the scattered per-driver CCU register pokes (gates, resets,
+#  PLLs, muxes, dividers, and the keyed MBUS/AHB gate registers) into one
+#  SoC library so register bit definitions live in exactly one place.
+#
+#  Copyright (c) 2026, carpi-os contributors.
+#  Portions derived from edk2-a733 (github.com/vehoelite/edk2-a733),
+#  Copyright (c) 2026 carpi-os contributors, BSD-2-Clause-Patent.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION    = 0x0001001C
+  BASE_NAME      = A733ClockLib
+  FILE_GUID      = 4a733020-dead-beef-cafe-a733a733a733
+  MODULE_TYPE    = BASE
+  VERSION_STRING = 0.1
+  LIBRARY_CLASS  = A733ClockLib
+
+[Sources]
+  A733ClockLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  DebugLib
+  IoLib
+  TimerLib

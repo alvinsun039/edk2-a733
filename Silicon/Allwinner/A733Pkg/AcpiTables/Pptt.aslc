@@ -1,0 +1,280 @@
+/** @file
+ *
+ *  A733 SoC Processor Properties Topology Table
+ *
+ *  Two clusters (manual Chapter 1 block diagram and BSP DTS cpu-map):
+ *    cluster0 = 6x Cortex-A55, shared L2 128 KB (4-way)
+ *    cluster1 = 2x Cortex-A76, shared L2 256 KB (the manual says
+ *               "265 KB"; use the power-of-two 256 KB, 4-way)
+ *  L1 geometry: A55 = 32 KB I + 32 KB D; A76 = 64 KB I + 64 KB D.
+ *
+ *  Layout follows the rk3588 template (edk2-rockchip Pptt.aslc):
+ *  package -> cluster -> core, with OFFSET_OF references for private
+ *  resources.  Unlike rk3588, the socket package has no L3 (the A733
+ *  has no DSU L3), so Package NumberOfPrivateResources = 0 and each
+ *  cluster carries its shared L2 (NumberOfPrivateResources = 1).
+ *
+ *  Copyright (c) 2023, Mario Bălănică <mariobalanica02@gmail.com> (template)
+ *
+ *  Portions derived from edk2-a733 (github.com/vehoelite/edk2-a733),
+ *  Copyright (c) 2026 carpi-os contributors, BSD-2-Clause-Patent.
+ *  SPDX-License-Identifier: BSD-2-Clause-Patent
+ *
+ **/
+
+#include <Base.h>
+#include <AcpiHelperMacros.h>
+#include <IndustryStandard/Acpi.h>
+
+#include "AcpiTables.h"
+
+#pragma pack(1)
+typedef struct {
+  EFI_ACPI_6_3_PPTT_STRUCTURE_PROCESSOR    Package;
+} A733_PPTT_PACKAGE_NODE;
+
+typedef struct {
+  EFI_ACPI_6_3_PPTT_STRUCTURE_PROCESSOR    Cluster;
+  UINT32                                   L2CacheRef;
+} A733_PPTT_CLUSTER_NODE;
+
+typedef struct {
+  EFI_ACPI_6_3_PPTT_STRUCTURE_PROCESSOR    Core;
+  UINT32                                   L1DCacheRef;
+  UINT32                                   L1ICacheRef;
+  UINT32                                   L2CacheRef;
+} A733_PPTT_CORE_NODE;
+
+typedef struct {
+  EFI_ACPI_6_3_PROCESSOR_PROPERTIES_TOPOLOGY_TABLE_HEADER    Header;
+  A733_PPTT_PACKAGE_NODE                                     Package;
+  A733_PPTT_CLUSTER_NODE                                     Clusters[2];
+  A733_PPTT_CORE_NODE                                        Cores[8];
+  EFI_ACPI_6_3_PPTT_STRUCTURE_CACHE                          A55L1DCache;
+  EFI_ACPI_6_3_PPTT_STRUCTURE_CACHE                          A55L1ICache;
+  EFI_ACPI_6_3_PPTT_STRUCTURE_CACHE                          A55L2Cache;
+  EFI_ACPI_6_3_PPTT_STRUCTURE_CACHE                          A76L1DCache;
+  EFI_ACPI_6_3_PPTT_STRUCTURE_CACHE                          A76L1ICache;
+  EFI_ACPI_6_3_PPTT_STRUCTURE_CACHE                          A76L2Cache;
+} A733_PPTT;
+#pragma pack()
+
+///
+/// For PPTT struct processor flags
+///
+#define EFI_ACPI_6_3_PPTT_PACKAGE_NOT_PHYSICAL  0x0
+#define EFI_ACPI_6_3_PPTT_PACKAGE_PHYSICAL      0x1
+#define EFI_ACPI_6_3_PPTT_PROCESSOR_ID_INVALID  0x0
+#define EFI_ACPI_6_3_PPTT_PROCESSOR_ID_VALID    0x1
+
+///
+/// For PPTT struct cache flags
+///
+#define EFI_ACPI_6_3_PPTT_CACHE_SIZE_INVALID       0x0
+#define EFI_ACPI_6_3_PPTT_CACHE_SIZE_VALID         0x1
+#define EFI_ACPI_6_3_PPTT_NUMBER_OF_SETS_INVALID   0x0
+#define EFI_ACPI_6_3_PPTT_NUMBER_OF_SETS_VALID     0x1
+#define EFI_ACPI_6_3_PPTT_ASSOCIATIVITY_INVALID    0x0
+#define EFI_ACPI_6_3_PPTT_ASSOCIATIVITY_VALID      0x1
+#define EFI_ACPI_6_3_PPTT_ALLOCATION_TYPE_INVALID  0x0
+#define EFI_ACPI_6_3_PPTT_ALLOCATION_TYPE_VALID    0x1
+#define EFI_ACPI_6_3_PPTT_CACHE_TYPE_INVALID       0x0
+#define EFI_ACPI_6_3_PPTT_CACHE_TYPE_VALID         0x1
+#define EFI_ACPI_6_3_PPTT_WRITE_POLICY_INVALID     0x0
+#define EFI_ACPI_6_3_PPTT_WRITE_POLICY_VALID       0x1
+#define EFI_ACPI_6_3_PPTT_LINE_SIZE_INVALID        0x0
+#define EFI_ACPI_6_3_PPTT_LINE_SIZE_VALID          0x1
+
+#define PPTT_DATA_CACHE_ATTRIBUTES                                                \
+  {                                                                               \
+    EFI_ACPI_6_3_CACHE_ATTRIBUTES_ALLOCATION_READ_WRITE,                          \
+    EFI_ACPI_6_3_CACHE_ATTRIBUTES_CACHE_TYPE_DATA,                                \
+    EFI_ACPI_6_3_CACHE_ATTRIBUTES_WRITE_POLICY_WRITE_BACK                         \
+  }
+
+#define PPTT_INST_CACHE_ATTRIBUTES                                                \
+  {                                                                               \
+    EFI_ACPI_6_3_CACHE_ATTRIBUTES_ALLOCATION_READ,                                \
+    EFI_ACPI_6_3_CACHE_ATTRIBUTES_CACHE_TYPE_INSTRUCTION,                         \
+    EFI_ACPI_6_3_CACHE_ATTRIBUTES_WRITE_POLICY_WRITE_BACK                         \
+  }
+
+#define PPTT_UNIFIED_CACHE_ATTRIBUTES                                             \
+  {                                                                               \
+    EFI_ACPI_6_3_CACHE_ATTRIBUTES_ALLOCATION_READ_WRITE,                          \
+    EFI_ACPI_6_3_CACHE_ATTRIBUTES_CACHE_TYPE_UNIFIED,                             \
+    EFI_ACPI_6_3_CACHE_ATTRIBUTES_WRITE_POLICY_WRITE_BACK                         \
+  }
+
+#define A733_PPTT_PACKAGE_NODE_INIT()  {                                          \
+  {                                               /* Package */                   \
+    EFI_ACPI_6_3_PPTT_TYPE_PROCESSOR,             /* Type */                      \
+    sizeof (A733_PPTT_PACKAGE_NODE),              /* Length */                    \
+    {                                             /* Reserved[2] */               \
+      EFI_ACPI_RESERVED_BYTE,                                                     \
+      EFI_ACPI_RESERVED_BYTE                                                      \
+    },                                                                            \
+    {                                             /* Flags */                     \
+      EFI_ACPI_6_3_PPTT_PACKAGE_PHYSICAL,                                         \
+      EFI_ACPI_6_3_PPTT_PROCESSOR_ID_VALID                                        \
+    },                                                                            \
+    0,                                            /* Parent */                    \
+    8,                                            /* AcpiProcessorId */           \
+    0                                             /* NumberOfPrivateResources */  \
+  }                                                                               \
+}
+
+//
+// Cluster node: shared L2 is the cluster's single private resource, so the
+// reference (UINT32 offset) trails the processor structure.  rk3588 keeps
+// the cluster nodes ref-less and hangs the L2 off each core instead — both
+// encodings are legal; we model the cluster as the L2 owner, matching the
+// hardware (single L2 per cluster, not per core).
+//
+#define A733_PPTT_CLUSTER_NODE(ClusterUid, L2CacheField)  {                       \
+  {                                               /* Cluster */                   \
+    EFI_ACPI_6_3_PPTT_TYPE_PROCESSOR,             /* Type */                      \
+    sizeof (A733_PPTT_CLUSTER_NODE),              /* Length */                    \
+    {                                             /* Reserved[2] */               \
+      EFI_ACPI_RESERVED_BYTE,                                                     \
+      EFI_ACPI_RESERVED_BYTE                                                      \
+    },                                                                            \
+    {                                             /* Flags */                     \
+      EFI_ACPI_6_3_PPTT_PACKAGE_NOT_PHYSICAL,                                     \
+      EFI_ACPI_6_3_PPTT_PROCESSOR_ID_VALID                                        \
+    },                                                                            \
+    OFFSET_OF (A733_PPTT, Package),               /* Parent */                    \
+    ClusterUid,                                   /* AcpiProcessorId */           \
+    1                                             /* NumberOfPrivateResources */  \
+  },                                                                              \
+  OFFSET_OF (A733_PPTT, L2CacheField)             /* L2CacheRef */                \
+}
+
+#define A733_PPTT_CORE_NODE_INIT(ClusterIndex, CoreUid,                           \
+                                 L1DCacheField, L1ICacheField, L2CacheField)  {   \
+  {                                               /* Core */                      \
+    EFI_ACPI_6_3_PPTT_TYPE_PROCESSOR,             /* Type */                      \
+    sizeof (A733_PPTT_CORE_NODE),                 /* Length */                    \
+    {                                             /* Reserved[2] */               \
+      EFI_ACPI_RESERVED_BYTE,                                                     \
+      EFI_ACPI_RESERVED_BYTE                                                      \
+    },                                                                            \
+    {                                             /* Flags */                     \
+      EFI_ACPI_6_3_PPTT_PACKAGE_NOT_PHYSICAL,                                     \
+      EFI_ACPI_6_3_PPTT_PROCESSOR_ID_VALID                                        \
+    },                                                                            \
+    OFFSET_OF (A733_PPTT,                                                       \
+               Clusters[ClusterIndex]),           /* Parent */                    \
+    CoreUid,                                      /* AcpiProcessorId */           \
+    3                                             /* NumberOfPrivateResources */  \
+  },                                                                              \
+  OFFSET_OF (A733_PPTT, L1DCacheField),           /* L1DCacheRef */               \
+  OFFSET_OF (A733_PPTT, L1ICacheField),           /* L1ICacheRef */               \
+  OFFSET_OF (A733_PPTT, L2CacheField)             /* L2CacheRef */                \
+}
+
+#define A733_PPTT_A55_CORE_NODE_INIT(ClusterIndex, CoreUid)                       \
+  A733_PPTT_CORE_NODE_INIT (                                                      \
+    ClusterIndex, CoreUid,                                                        \
+    A55L1DCache, A55L1ICache, A55L2Cache                                          \
+  )
+
+#define A733_PPTT_A76_CORE_NODE_INIT(ClusterIndex, CoreUid)                       \
+  A733_PPTT_CORE_NODE_INIT (                                                      \
+    ClusterIndex, CoreUid,                                                        \
+    A76L1DCache, A76L1ICache, A76L2Cache                                          \
+  )
+
+#define A733_PPTT_CACHE_NODE_INIT(NextLevelOfCache, Size,                         \
+                                  NumberOfSets, Attributes)  {                    \
+  EFI_ACPI_6_3_PPTT_TYPE_CACHE,                   /* Type */                      \
+  sizeof (EFI_ACPI_6_3_PPTT_STRUCTURE_CACHE),     /* Length */                    \
+  {                                               /* Reserved[2] */               \
+    EFI_ACPI_RESERVED_BYTE,                                                       \
+    EFI_ACPI_RESERVED_BYTE                                                        \
+  },                                                                              \
+  {                                               /* Flags */                     \
+    EFI_ACPI_6_3_PPTT_CACHE_SIZE_VALID,                                           \
+    EFI_ACPI_6_3_PPTT_NUMBER_OF_SETS_VALID,                                       \
+    EFI_ACPI_6_3_PPTT_ASSOCIATIVITY_VALID,                                        \
+    EFI_ACPI_6_3_PPTT_ALLOCATION_TYPE_VALID,                                      \
+    EFI_ACPI_6_3_PPTT_CACHE_TYPE_VALID,                                           \
+    EFI_ACPI_6_3_PPTT_WRITE_POLICY_VALID,                                         \
+    EFI_ACPI_6_3_PPTT_LINE_SIZE_VALID                                             \
+  },                                                                              \
+  NextLevelOfCache,                               /* NextLevelOfCache */          \
+  Size,                                           /* Size */                      \
+  NumberOfSets,                                   /* NumberOfSets */              \
+  Size / NumberOfSets / 64,                       /* Associativity */             \
+  Attributes,                                     /* Attributes */                \
+  64                                              /* LineSize */                  \
+}
+
+STATIC A733_PPTT  Pptt = {
+  {
+    ACPI_HEADER (
+      EFI_ACPI_6_3_PROCESSOR_PROPERTIES_TOPOLOGY_TABLE_STRUCTURE_SIGNATURE,
+      A733_PPTT,
+      EFI_ACPI_6_3_PROCESSOR_PROPERTIES_TOPOLOGY_TABLE_REVISION
+      ),
+  },
+  A733_PPTT_PACKAGE_NODE_INIT (),
+  {                                               /* Clusters */
+    A733_PPTT_CLUSTER_NODE (9, A55L2Cache),       /* 6x Cortex-A55 cluster */
+    A733_PPTT_CLUSTER_NODE (10, A76L2Cache)       /* 2x Cortex-A76 cluster */
+  },
+  {                                               /* Cores */
+    A733_PPTT_A55_CORE_NODE_INIT (0, 0),          /* 6x Cortex-A55 (cluster0) */
+    A733_PPTT_A55_CORE_NODE_INIT (0, 1),
+    A733_PPTT_A55_CORE_NODE_INIT (0, 2),
+    A733_PPTT_A55_CORE_NODE_INIT (0, 3),
+    A733_PPTT_A55_CORE_NODE_INIT (0, 4),
+    A733_PPTT_A55_CORE_NODE_INIT (0, 5),
+    A733_PPTT_A76_CORE_NODE_INIT (1, 6),          /* 2x Cortex-A76 (cluster1) */
+    A733_PPTT_A76_CORE_NODE_INIT (1, 7)
+  },
+  A733_PPTT_CACHE_NODE_INIT (
+    /* A55L1DCache */
+    OFFSET_OF (A733_PPTT, A55L2Cache),            /* NextLevelOfCache */
+    SIZE_32KB,                                    /* Size */
+    128,                                          /* NumberOfSets */
+    PPTT_DATA_CACHE_ATTRIBUTES                    /* Attributes */
+    ),
+  A733_PPTT_CACHE_NODE_INIT (
+    /* A55L1ICache */
+    OFFSET_OF (A733_PPTT, A55L2Cache),            /* NextLevelOfCache */
+    SIZE_32KB,                                    /* Size */
+    128,                                          /* NumberOfSets */
+    PPTT_INST_CACHE_ATTRIBUTES                    /* Attributes */
+    ),
+  A733_PPTT_CACHE_NODE_INIT (
+    /* A55L2Cache — cluster0 shared, manual "L2 Cache 128 KB" */
+    0,                                            /* NextLevelOfCache */
+    SIZE_128KB,                                   /* Size */
+    512,                                          /* NumberOfSets */
+    PPTT_UNIFIED_CACHE_ATTRIBUTES                 /* Attributes */
+    ),
+  A733_PPTT_CACHE_NODE_INIT (
+    /* A76L1DCache */
+    OFFSET_OF (A733_PPTT, A76L2Cache),            /* NextLevelOfCache */
+    SIZE_64KB,                                    /* Size */
+    256,                                          /* NumberOfSets */
+    PPTT_DATA_CACHE_ATTRIBUTES                    /* Attributes */
+    ),
+  A733_PPTT_CACHE_NODE_INIT (
+    /* A76L1ICache */
+    OFFSET_OF (A733_PPTT, A76L2Cache),            /* NextLevelOfCache */
+    SIZE_64KB,                                    /* Size */
+    256,                                          /* NumberOfSets */
+    PPTT_INST_CACHE_ATTRIBUTES                    /* Attributes */
+    ),
+  A733_PPTT_CACHE_NODE_INIT (
+    /* A76L2Cache — cluster1 shared, manual "L2 Cache 265 KB" -> 256 KB */
+    0,                                            /* NextLevelOfCache */
+    SIZE_256KB,                                   /* Size */
+    1024,                                         /* NumberOfSets */
+    PPTT_UNIFIED_CACHE_ATTRIBUTES                 /* Attributes */
+    )
+};
+
+VOID *CONST  ReferenceAcpiTable = &Pptt;

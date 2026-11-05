@@ -1,0 +1,81 @@
+## @file
+#  Minimal boot manager policy for the Cubie A7A.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION    = 0x00010005
+  BASE_NAME      = PlatformBootManagerLib
+  FILE_GUID      = b2c3d4e5-6f70-4182-93a4-a7a000000010
+  MODULE_TYPE    = DXE_DRIVER
+  VERSION_STRING = 1.0
+  LIBRARY_CLASS  = PlatformBootManagerLib|DXE_DRIVER
+
+[Sources]
+  PlatformBootManagerLib.c
+  A733VarSnapshot.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  Platform/Radxa/CubieA7APkg/CubieA7A.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  A733CcuLib
+  A733GpioLib
+  A733PmicLib
+  BootLogoLib
+  DebugLib
+  DevicePathLib
+  DxeServicesLib
+  FdtLib
+  IoLib
+  MemoryAllocationLib
+  PcdLib
+  UefiBootManagerLib
+  UefiBootServicesTableLib
+  UefiLib
+  UefiRuntimeServicesTableLib
+
+[Pcd]
+  gA733TokenSpaceGuid.PcdA733CcuDumpEnable
+  gA733TokenSpaceGuid.PcdA733GpioDumpEnable
+
+  ## The boot-timeout window the progress bar visualises.
+  gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut
+
+  ## Whether BDS boots the fastboot application before the Shell.
+  gCubieA7APkgTokenSpaceGuid.PcdA733FastbootBoot
+
+  ## Whether the NV variable set is mirrored to a FAT volume and restored
+  ## from it onto a store that has never been written.
+  gCubieA7APkgTokenSpaceGuid.PcdA733VarSnapshotEnable
+
+  ## 0 = microSD build, 1 = eMMC build: which volume class carries the file.
+  gCubieA7APkgTokenSpaceGuid.PcdA733BootMedium
+
+[Guids]
+  ## The ESP's GPT type GUID, when the partition flag is not enough
+  gEfiPartTypeSystemPartGuid
+  ## The NV marker ArrangeBootOrderFirst records the applied policy in.
+  gCubieA7ABootPolicyGuid
+  ## Namespace of the FdtOverride* variables InstallPlatformFdt reads.
+  gA733SetupFormSetGuid
+  ## Disk class names come from A733SmhcDxe's vendor device-path node.
+  gA733TokenSpaceGuid
+  ## EndOfDxe event group: unblocks 3rd-party image load (see SignalEndOfDxe).
+  gEfiEndOfDxeEventGroupGuid
+  gEfiConsoleInDeviceGuid
+  gEfiConsoleOutDeviceGuid
+  gEfiStandardErrorDeviceGuid
+
+[Protocols]
+  ## Enumerates the GPT partitions RegisterAndroidBootOptions looks for boot_a on.
+  gEfiPartitionInfoProtocolGuid
+  ## Volume scan for the FDT override and the variable snapshot.
+  gEfiSimpleFileSystemProtocolGuid
+  ## Tells the SD card's volumes from the eMMC's (RemovableMedia).
+  gEfiBlockIoProtocolGuid

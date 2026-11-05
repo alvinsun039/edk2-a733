@@ -1,0 +1,32 @@
+## @file
+#  Clock control unit library for the Allwinner A733 (sun60iw2p1).
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION    = 0x00010005
+  BASE_NAME      = A733CcuLib
+  FILE_GUID      = 6f0e1c2a-7b3d-4c8e-9a51-a73300000004
+  MODULE_TYPE    = BASE
+  VERSION_STRING = 1.0
+  LIBRARY_CLASS  = A733CcuLib
+
+[Sources]
+  A733CcuLib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  BaseLib
+  DebugLib
+  IoLib
+  PcdLib
+  TimerLib
+
+[Pcd]
+  gA733TokenSpaceGuid.PcdA733CcuBase
+  gA733TokenSpaceGuid.PcdA733CpuPllBase

@@ -1,0 +1,103 @@
+## @file
+#  eMMC host driver for the Allwinner A733 (sun60iw2p1).
+#
+#  Publishes EFI_SD_MMC_PASS_THRU_PROTOCOL for the board's eMMC after bringing
+#  the controller, the CCU clock and its pads up and identifying the card, one
+#  handle per controller.  Which controllers there are, and where each one is,
+#  which interrupt it raises, which CCU module clocks it and which pads carry it,
+#  is board data: A733SmhcBoardLib answers that, and its table is a board's whole
+#  contribution to this driver.  MdeModulePkg's EmmcDxe, PartitionDxe and FatPkg
+#  supply the block, partition and file-system layers on top.
+#
+#  The data phase runs on the controller's internal DMA controller and completes
+#  by interrupt, so the driver consumes the platform's hardware interrupt
+#  protocol (ArmGicDxe produces both variants; this driver is in the FV after it,
+#  and the depex below makes that ordering a requirement rather than a habit).
+#
+#  The driver only touches MMIO it owns, so its entry point needs nothing but
+#  the boot services table: no depex section beyond the interrupt protocol, and
+#  the protocol is installed during dispatch, before BDS connects controllers.
+#
+#  Copyright (c) 2026, edk2-a733 contributors.
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+[Defines]
+  INF_VERSION    = 0x00010005
+  BASE_NAME      = A733SmhcDxe
+  FILE_GUID      = 6f0e1c2a-7b3d-4c8e-9a51-a73300000010
+  MODULE_TYPE    = UEFI_DRIVER
+  VERSION_STRING = 1.0
+  ENTRY_POINT    = A733SmhcDxeEntryPoint
+
+[Sources]
+  A733SmhcDxe.c
+  A733SmhcDxe.h
+  A733SmhcCard.c
+  A733SmhcSd.c
+  A733SmhcHci.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  ArmPkg/ArmPkg.dec
+  Platform/Radxa/CubieA7APkg/CubieA7A.dec
+  Silicon/Allwinner/A733Pkg/A733Pkg.dec
+
+[LibraryClasses]
+  A733PmicLib
+  A733CcuLib
+  A733GpioLib
+  ## The board's SMHC controller table: the driver has no controller it knows by
+  ## name, it walks the table this library returns.
+  A733SmhcBoardLib
+  ArmLib
+  BaseLib
+  BaseMemoryLib
+  CacheMaintenanceLib
+  DebugLib
+  DevicePathLib
+  IoLib
+  MemoryAllocationLib
+  PcdLib
+  TimerLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+
+[Protocols]
+  ## PRODUCES
+  gEfiSdMmcPassThruProtocolGuid
+  ## CONSUMES ## the controller's interrupt: the second protocol when it is
+  ## there, since it can also set the source's trigger type.
+  gHardwareInterruptProtocolGuid
+  gHardwareInterrupt2ProtocolGuid
+
+[Guids]
+  ## CONSUMES ## the controller's device path node carries the platform's GUID
+  gA733TokenSpaceGuid
+
+[Pcd]
+  gA733TokenSpaceGuid.PcdA733GpioBase
+  ## The CCU base: the module's FACTOR_N is cleared here (A733CcuSetModuleClock
+  ## owns the parent and FACTOR_M and leaves N to the module).
+  gA733TokenSpaceGuid.PcdA733CcuBase
+
+  ## Read-only, and only for the interrupt diagnostic: the distributor's
+  ## enable/pending/active/group/trigger words for the controller's SPI are
+  ## reported so a boot log can say where an interrupt that never arrives was
+  ## lost.
+  gArmTokenSpaceGuid.PcdGicDistributorBase
+
+  ## Print one DEBUG_INFO line per command, and the EXT_CSD identification
+  ## detail, when the build asks for it.
+  gA733TokenSpaceGuid.PcdA733SmhcDumpEnable
+
+#
+# The controller's completion is delivered through the platform's interrupt
+# protocol, which ArmGicDxe installs; requiring it here means the driver is
+# dispatched after the GIC rather than relying on the order the FV happens to
+# list its drivers in.  Registering on the v1 protocol also guarantees the v2
+# one exists, since that driver installs both in one call.
+#
+[Depex]
+  gHardwareInterruptProtocolGuid
